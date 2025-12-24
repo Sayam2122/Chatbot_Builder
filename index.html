@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bot Flow Builder</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="header-content">
+      <h1>🤖 Bot Flow Builder</h1>
+      <div class="mode-toggle" id="modeToggle" style="display:none;">
+        <button class="toggle-btn active" id="toggleCasual" data-mode="casual">
+          <span class="toggle-icon">🎯</span>
+          <span class="toggle-label">Casual Bot</span>
+        </button>
+        <button class="toggle-btn" id="toggleAI" data-mode="ai">
+          <span class="toggle-icon">🤖</span>
+          <span class="toggle-label">AI Bot</span>
+        </button>
+      </div>
+    </div>
+  </header>
+  
+  <!-- PDF.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <main class="main-layout">
+    <!-- Mode Switcher (shown initially) -->
+    <section class="mode-switcher" id="modeSwitcher">
+      <div class="mode-container">
+        <h2 style="text-align:center;margin-bottom:30px;color:#022c3a;font-size:28px">Choose Your Bot Mode</h2>
+        <div class="mode-buttons">
+          <button class="mode-btn casual-mode-btn" id="casualModeBtn">
+            <div class="mode-icon">🎯</div>
+            <h3>Casual Bot</h3>
+            <p>Build conversational flows with node-based logic. Perfect for rule-based conversations!</p>
+          </button>
+          <button class="mode-btn ai-mode-btn" id="aiModeBtn">
+            <div class="mode-icon">🤖</div>
+            <h3>AI Bot</h3>
+            <p>Train with documents and let AI answer questions. Powered by machine learning!</p>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Casual Bot Section (hidden by default) -->
+    <section class="bot-section casual-bot-section" id="casualBotSection" style="display:none">
+      <div class="flow-canvas" id="flowCanvas">
+        <svg id="connectionsSvg" class="connections-layer"></svg>
+        <div class="nodes-layer" id="nodesLayer"></div>
+      </div>
+      
+      <!-- Bot Chat Panel (always visible in Casual mode) -->
+      <div class="bot-panel" id="botPanel">
+        <div class="panel-header">
+          <h2>🤖 Chat with Bot</h2>
+          <div style="display:flex;gap:8px;">
+            <button id="customizeNodesBtn" class="customize-btn" style="display:none;">🎨 Customize Nodes</button>
+            <button id="mainMenuBtn" class="main-menu-btn" style="display:none;">🏠 Main Menu</button>
+            <button id="resetChat" class="reset-btn">🔄 Reset</button>
+          </div>
+        </div>
+        
+        <div class="chat-area">
+          <div id="chatLog" class="chat-log"></div>
+          
+          <!-- Quick Question Buttons -->
+          <div class="quick-questions" id="quickQuestions">
+            <p style="margin:0 0 10px 0;font-size:13px;color:#666;font-weight:600;">💡 Quick Questions:</p>
+            <button class="quick-btn" data-question="What is an embedding?">🧮 What is an embedding?</button>
+            <button class="quick-btn" data-question="What is chunking?">✂️ What is chunking?</button>
+            <button class="quick-btn" data-question="What is a vector?">📊 What is a vector?</button>
+            <button class="quick-btn" data-question="How does AI learn?">🎓 How does AI learn?</button>
+            <button class="quick-btn" data-question="What is RAG?">🤖 What is RAG?</button>
+            <button class="quick-btn main-menu-quick" data-action="mainmenu">🏠 Main Menu</button>
+          </div>
+          
+          <div class="chat-input">
+            <input id="userMessage" placeholder="Type your message..." />
+            <button id="sendBtn">Send</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI Bot Section (hidden by default) -->
+    <section class="bot-section ai-bot-section" id="aiBotSection" style="display:none">
+      <div class="ai-training-container">
+        <h2 style="text-align:center;margin-bottom:20px">🤖 Train Your AI Bot</h2>
+        <p style="text-align:center;color:#666;margin-bottom:30px">Upload documents or paste text to train your AI assistant</p>
+        <button class="btn-primary" id="openTrainingBtn" style="padding:15px 30px;font-size:16px">📚 Start Training</button>
+      </div>
+      
+      <!-- Bot Chat Panel (always visible in AI mode) -->
+      <div class="bot-panel" id="botPanelAI">
+        <div class="panel-header">
+          <h2>🤖 Chat with AI Bot</h2>
+          <button id="resetChatAI" class="reset-btn">🔄 Reset</button>
+        </div>
+        
+        <div class="chat-area">
+          <div id="chatLogAI" class="chat-log"></div>
+          
+          <div class="chat-input">
+            <input id="userMessageAI" placeholder="Ask anything..." />
+            <button id="sendBtnAI">Send</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Knowledge Base Modal -->
+    <div class="modal modal-large" id="knowledgeModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>📚 Train Bot from Book/Text (AI Processing)</h3>
+          <button class="close-btn" id="closeKnowledgeModal">✕</button>
+        </div>
+        <div class="modal-body-split">
+          <div class="modal-left">
+            <p style="margin-bottom:12px;color:#666">Upload a text/PDF file or paste content. Watch the AI process it step-by-step.</p>
+            <label>
+              <span>Upload File (.txt or .pdf)</span>
+              <input type="file" id="knowledgeFileInput" accept=".txt,.pdf" />
+            </label>
+            <div id="uploadStatus" style="font-size:12px;color:#666;margin:8px 0;display:none"></div>
+            <label>
+              <span>Or Paste Text Content</span>
+              <textarea id="knowledgeText" rows="6" placeholder="Paste your book content, documentation, or knowledge here..."></textarea>
+            </label>
+            <div style="margin-top:12px;padding:10px;background:#e8f5e9;border-radius:6px;border:1px solid #66bb6a">
+              <h4 style="margin:0 0 10px 0;font-size:14px;color:#2e7d32">🤖 AI-Powered Answers</h4>
+              
+              <label style="font-size:12px;display:block;margin-bottom:8px">
+                <strong>Choose API Option:</strong>
+                <select id="apiOption" style="width:100%;padding:8px;margin-top:4px;font-size:13px;border:2px solid #66bb6a;border-radius:4px">
+                  <option value="bookeinstein">Use BookEinstein API (Recommended - No key needed!)</option>
+                  <option value="own">Use Your Own API Key</option>
+                </select>
+              </label>
+
+              <div id="ownKeySettings" style="display:none;margin-top:12px;padding:10px;background:#fff;border-radius:4px;border:1px solid #ddd">
+                <label style="font-size:12px;display:block;margin-bottom:8px">
+                  <strong>Provider:</strong>
+                  <select id="llmProvider" style="width:100%;padding:6px;margin-top:4px;font-size:12px">
+                    <option value="gemini">Google Gemini (FREE)</option>
+                    <option value="openai">OpenAI (requires billing)</option>
+                  </select>
+                </label>
+                <input type="text" id="apiKey" placeholder="Enter your API Key" style="width:100%;font-size:12px;padding:8px;margin-bottom:8px" />
+                <div id="providerInfo" style="font-size:11px;color:#666">
+                  <p id="geminiInfo">
+                    <strong>📝 How to get FREE Gemini API Key:</strong><br>
+                    1. Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#1976d2">aistudio.google.com/app/apikey</a><br>
+                    2. Sign in with Google account<br>
+                    3. Click "Create API Key"<br>
+                    4. Copy and paste it above ✨
+                  </p>
+                  <p id="openaiInfo" style="display:none">
+                    Get key at <a href="https://platform.openai.com/api-keys" target="_blank" style="color:#1976d2">platform.openai.com/api-keys</a> (needs billing)
+                  </p>
+                </div>
+              </div>
+
+              <div id="bookEinsteinInfo" style="margin-top:10px;padding:8px;background:#fff;border-radius:4px;font-size:12px;color:#555">
+                ✅ <strong>Using BookEinstein's Gemini API</strong> - Free and ready to use! No configuration needed.
+              </div>
+            </div>
+            <div class="modal-footer" style="border-top:none;padding:0;margin-top:12px">
+              <button class="btn-secondary" id="clearKnowledge">Clear Knowledge</button>
+              <button class="btn-primary" id="saveKnowledge">Save & Train</button>
+            </div>
+          </div>
+          <div class="modal-right">
+            <h4 style="margin-top:0;font-size:15px;margin-bottom:12px">🤖 AI Processing Pipeline</h4>
+            <div id="processingSteps" class="processing-steps">
+              <div class="step" data-step="1">
+                <div class="step-icon">📄</div>
+                <div class="step-content">
+                  <strong>1. Taking Input from User</strong>
+                  <p>You upload a document or paste text content</p>
+                  <span class="step-detail" id="inputPreview" style="font-size:11px;color:#666;font-style:italic">Waiting for input...</span>
+                </div>
+              </div>
+              <div class="step" data-step="2">
+                <div class="step-icon">✂️</div>
+                <div class="step-content">
+                  <strong>2. Text Chunking</strong>
+                  <p>Split text into smaller paragraphs (chunks) for better understanding</p>
+                  <span class="step-detail" id="chunkCount">Chunks: 0</span>
+                  <div id="chunkExamples" style="font-size:10px;color:#333;margin-top:8px;max-height:150px;overflow-y:auto;background:#f9f9f9;padding:6px;border-radius:4px;border:1px solid #ddd;display:none">
+                    <strong style="color:#4caf50;display:block;margin-bottom:4px;">📝 Example Chunks:</strong>
+                    <div id="chunkList"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="step" data-step="3">
+                <div class="step-icon">🧮</div>
+                <div class="step-content">
+                  <strong>3. Converting to AI Language</strong>
+                  <p>Transform chunks into vectors (numbers) - called "Embeddings"</p>
+                  <span class="step-detail" id="embeddingCount">Embeddings: 0</span>
+                  <div id="embeddingExamples" style="font-size:10px;color:#333;margin-top:8px;max-height:150px;overflow-y:auto;background:#f9f9f9;padding:6px;border-radius:4px;border:1px solid #ddd;display:none">
+                    <strong style="color:#2196f3;display:block;margin-bottom:4px;">🔢 Example Embeddings (AI Vectors):</strong>
+                    <div id="embeddingList"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="step" data-step="4">
+                <div class="step-icon">💾</div>
+                <div class="step-content">
+                  <strong>4. Store in Memory</strong>
+                  <p>Save all chunks with their embeddings for quick search</p>
+                  <span class="step-detail" id="storageSize">Size: 0 KB</span>
+                </div>
+              </div>
+              <div class="step" data-step="5">
+                <div class="step-icon">🔍</div>
+                <div class="step-content">
+                  <strong>5. User Asks Question</strong>
+                  <p>When you chat, AI converts your question to embeddings too</p>
+                  <span class="step-detail" id="lastQuery">Waiting for query...</span>
+                </div>
+              </div>
+              <div class="step" data-step="6">
+                <div class="step-icon">🎯</div>
+                <div class="step-content">
+                  <strong>6. Find Best Match</strong>
+                  <p>AI compares your question with stored chunks to find answers</p>
+                  <span class="step-detail" id="searchResults">Results: 0</span>
+                </div>
+              </div>
+              <div class="step" data-step="7">
+                <div class="step-icon">💬</div>
+                <div class="step-content">
+                  <strong>7. Generate Answer</strong>
+                  <p>Combine top chunks into response</p>
+                  <span class="step-detail" id="answerGenerated">Ready</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal" id="editModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalTitle">Edit Node</h3>
+          <button class="close-btn" id="closeModal">✕</button>
+        </div>
+        <div class="modal-body">
+          <label>
+            <span>Node Type</span>
+            <select id="nodeType">
+              <option value="response">Bot Response</option>
+              <option value="user-input">User Input</option>
+              <option value="fallback">Default Fallback</option>
+            </select>
+          </label>
+          <label id="questionLabel">
+            <span>User Input / Trigger Question</span>
+            <input type="text" id="nodeQuestion" placeholder="e.g., hello, what's your name" />
+          </label>
+          <label id="messageLabel">
+            <span>Bot Response Message</span>
+            <textarea id="nodeMessage" rows="4" placeholder="Bot response message..."></textarea>
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="deleteNode">Delete Node</button>
+          <button class="btn-primary" id="saveNode">Save</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+  <script src="config.js"></script>
+  <script src="rag.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
