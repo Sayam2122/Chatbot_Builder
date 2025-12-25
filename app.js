@@ -1854,29 +1854,13 @@ saveKnowledge.addEventListener('click', async () => {
     }
   }
   
-  // Reset all steps
-  document.querySelectorAll('.step').forEach(s => {
-    s.classList.remove('active', 'completed');
-  });
-  
-  // Hide examples
-  document.getElementById('chunkExamples').style.display = 'none';
-  document.getElementById('embeddingExamples').style.display = 'none';
-  
-  // Step 1: Text Input
-  await animateStep(1);
-  const preview = textContent.substring(0, 100) + (textContent.length > 100 ? '...' : '');
-  document.getElementById('inputPreview').textContent = `"${preview}"`;
-  document.getElementById('chunkCount').textContent = 'Chunks: 0';
-  
-  // Step 2: Text Chunking
-  await animateStep(2);
-  
-  // Step 3: Create Embeddings
-  await animateStep(3);
-  
-  // Step 4: Store in Memory
-  await animateStep(4);
+  // Show progress indicator
+  const progressDiv = document.getElementById('trainingProgress');
+  const progressText = document.getElementById('progressText');
+  if(progressDiv) {
+    progressDiv.style.display = 'block';
+    progressText.textContent = 'Processing your document...';
+  }
   
   // Use RAG system to train
   const stats = await ragSystem.train(textContent);
@@ -1893,47 +1877,25 @@ saveKnowledge.addEventListener('click', async () => {
   
   // Update UI stats
   document.getElementById('chunkCount').textContent = `Chunks: ${stats.chunks}`;
-  document.getElementById('embeddingCount').textContent = `Vectors: ${stats.embeddings}`;
+  document.getElementById('embeddingCount').textContent = `Embeddings: ${stats.embeddings}`;
   document.getElementById('storageSize').textContent = `Size: ${stats.sizeKB} KB`;
   
-  // Show example chunks (first 4-5)
-  const chunkExamplesDiv = document.getElementById('chunkExamples');
-  const chunkList = document.getElementById('chunkList');
-  if(chunkExamplesDiv && chunkList){
-    chunkList.innerHTML = '';
-    const chunksToShow = Math.min(5, ragSystem.chunks.length);
-    for(let i = 0; i < chunksToShow; i++){
-      const chunkPreview = ragSystem.chunks[i].substring(0, 80) + (ragSystem.chunks[i].length > 80 ? '...' : '');
-      chunkList.innerHTML += `<div style="margin:3px 0;padding:4px;background:#fff;border-left:3px solid #4caf50;border-radius:3px;"><strong>Chunk ${i+1}:</strong> "${chunkPreview}"</div>`;
-    }
-    if(chunksToShow > 0){
-      chunkExamplesDiv.style.display = 'block';
-      console.log('✅ Showing', chunksToShow, 'chunk examples');
-    }
-  }
-  
-  // Show example embeddings (first 4-5)
-  const embeddingExamplesDiv = document.getElementById('embeddingExamples');
-  const embeddingList = document.getElementById('embeddingList');
-  if(embeddingExamplesDiv && embeddingList){
-    embeddingList.innerHTML = '';
-    const embeddingsToShow = Math.min(5, ragSystem.embeddings.length);
-    for(let i = 0; i < embeddingsToShow; i++){
-      // Show first 5 values of each embedding vector
-      const embedding = ragSystem.embeddings[i];
-      const vectorPreview = Object.entries(embedding).slice(0, 5).map(([word, val]) => `${word}:${val.toFixed(2)}`).join(', ');
-      const vectorSize = Object.keys(embedding).length;
-      embeddingList.innerHTML += `<div style="margin:3px 0;padding:4px;background:#fff;border-left:3px solid #2196f3;border-radius:3px;"><strong>Vector ${i+1}:</strong> [${vectorPreview}... <em>${vectorSize} words</em>]</div>`;
-    }
-    if(embeddingsToShow > 0){
-      embeddingExamplesDiv.style.display = 'block';
-      console.log('✅ Showing', embeddingsToShow, 'embedding examples');
-    }
+  // Update progress
+  if(progressText) {
+    progressText.textContent = '✅ Training completed successfully!';
+    progressText.style.color = '#2e7d32';
   }
   
   const llmStatus = ragSystem.enabled && ragSystem.apiKey ? '✅ LLM Ready' : '⚠️ LLM Not Configured';
   
   alert(`✅ Knowledge base trained successfully!\n\n📊 Stats:\n- ${stats.chunks} chunks created\n- ${stats.embeddings} embeddings generated\n- ${stats.vocabulary} unique terms indexed\n- ${stats.sizeKB} KB stored\n- ${llmStatus}\n\n${ragSystem.enabled ? 'The bot can now use AI to answer questions with conversation memory!' : 'Enable LLM mode for AI-powered answers'}`);
+  
+  // Hide progress after alert
+  if(progressDiv) {
+    setTimeout(() => {
+      progressDiv.style.display = 'none';
+    }, 2000);
+  }
 });
 
 // Clear knowledge base
@@ -1949,12 +1911,12 @@ clearKnowledge.addEventListener('click', () => {
     knowledgeEmbeddings = [];
     
     // Reset display
+    const progressDiv = document.getElementById('trainingProgress');
+    if(progressDiv) progressDiv.style.display = 'none';
+    
     document.getElementById('chunkCount').textContent = 'Chunks: 0';
-    document.getElementById('embeddingCount').textContent = 'Vectors: 0';
+    document.getElementById('embeddingCount').textContent = 'Embeddings: 0';
     document.getElementById('storageSize').textContent = 'Size: 0 KB';
-    document.getElementById('lastQuery').textContent = 'Waiting for query...';
-    document.getElementById('searchResults').textContent = 'Results: 0';
-    document.querySelectorAll('.step').forEach(s => s.classList.remove('active', 'completed'));
     
     alert('Knowledge base and conversation history cleared!');
   }
