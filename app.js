@@ -161,6 +161,11 @@ function switchToCasualMode() {
 // Auto-load PDFs from books folder for initial training
 async function loadInitialPDFs() {
   try {
+    // Ensure API is configured before loading PDFs
+    if(typeof updateAPIConfig === 'function') {
+      updateAPIConfig();
+    }
+    
     // Note: This requires a file listing endpoint or manual array of PDF names
     // For now, we'll use a hardcoded list that user can update
     const pdfFiles = [
@@ -1858,6 +1863,9 @@ saveKnowledge.addEventListener('click', async () => {
       alert('⚠️ Only PDF files are allowed!\n\nPlease upload a PDF document.');
       return;
     }
+    
+    // Ensure API configuration is set before training
+    updateAPIConfig();
     
     // Store data for wizard
     trainingData.fullText = textContent;
