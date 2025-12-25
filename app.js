@@ -1837,21 +1837,22 @@ saveKnowledge.addEventListener('click', async () => {
   
   const textContent = knowledgeText.value.trim();
   if(!textContent){
-    alert('Please upload a file or paste some text content first.');
+    alert('⚠️ Please upload a PDF file first.');
     return;
   }
   
-  // Check if file was uploaded (only allow PDF in AI mode after initial training)
+  // Check if file was uploaded - only PDF allowed
   if(knowledgeFileInput.files.length > 0) {
     const file = knowledgeFileInput.files[0];
     
-    // In AI mode, only allow PDF files
-    if(currentMode === 'ai' && aiTrainingOffered) {
-      if(!file.name.toLowerCase().endsWith('.pdf')) {
-        alert('⚠️ Only PDF files are allowed!\n\nPlease upload a PDF document.');
-        return;
-      }
+    // Only allow PDF files
+    if(!file.name.toLowerCase().endsWith('.pdf')) {
+      alert('⚠️ Only PDF files are allowed!\n\nPlease upload a PDF document.');
+      return;
     }
+  } else {
+    alert('⚠️ Please upload a PDF file first.');
+    return;
   }
   
   // Show progress indicator
