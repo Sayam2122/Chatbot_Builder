@@ -1422,8 +1422,28 @@ async function sendMessageAI() {
         lastMsg.textContent = llmAnswer;
       }
       
-      // After 3 questions, offer training option
-      if(aiQuestionCount === 3 && !aiTrainingOffered && !userHasTrained) {
+      // Check if LLM response indicates lack of information
+      const lackOfInfoPhrases = [
+        'don\'t have enough information',
+        'don\'t have information',
+        'not enough information',
+        'no information',
+        'knowledge base does not contain',
+        'cannot find information'
+      ];
+      
+      const hasLackOfInfo = lackOfInfoPhrases.some(phrase => 
+        llmAnswer.toLowerCase().includes(phrase)
+      );
+      
+      if (hasLackOfInfo) {
+        // Offer to train on new data
+        setTimeout(() => {
+          appendMessageAI('bot', '💡 Would you like to train me on additional data to answer this question?\n\nType "yes" to upload more training materials!');
+          aiTrainingOffered = true; // Allow user to train again
+        }, 1500);
+      } else if(aiQuestionCount === 3 && !aiTrainingOffered && !userHasTrained) {
+        // After 3 questions, offer training option (original logic)
         aiTrainingOffered = true;
         setTimeout(() => {
           appendMessageAI('bot', '💡 You can also train me on your own data!\n\nWould you like to upload your own PDF document? (Type "yes" to proceed)');
@@ -1432,9 +1452,17 @@ async function sendMessageAI() {
       
     } catch (error) {
       console.error('LLM Error:', error);
+      console.error('Error message includes NO_RELEVANT_INFO:', error.message && error.message.includes('NO_RELEVANT_INFO'));
+      
       const lastMsg = chatLogAI.lastElementChild;
       if (lastMsg && lastMsg.classList.contains('bot-message')) {
-        lastMsg.textContent = '❌ ' + error.message;
+        // Check if it's the NO_RELEVANT_INFO error
+        if (error.message && error.message.includes('NO_RELEVANT_INFO')) {
+          // Show the custom message without the prefix
+          lastMsg.textContent = error.message.replace('NO_RELEVANT_INFO: ', '');
+        } else {
+          lastMsg.textContent = '❌ ' + error.message;
+        }
       }
       
       // If error is about no relevant information, offer to train on new data
@@ -1690,12 +1718,26 @@ editModal.addEventListener('click', (e) => {
 // Open training modal button (in AI bot section)
 if(openTrainingBtn){
   openTrainingBtn.addEventListener('click', () => {
-    knowledgeModal.classList.add('open');
+    console.log('🔧 Start Training button clicked');
+    console.log('📋 knowledgeModal element:', knowledgeModal);
+    if(knowledgeModal) {
+      knowledgeModal.style.display = 'flex';
+      showWizardStep(0); // Always show upload screen when opening
+      console.log('✅ Modal should be visible now');
+    } else {
+      console.error('❌ knowledgeModal element not found!');
+    }
   });
+} else {
+  console.error('❌ openTrainingBtn element not found!');
 }
 
 closeKnowledgeModal.addEventListener('click', () => {
-  knowledgeModal.classList.remove('open');
+  console.log('🔧 Close button clicked');
+  if(knowledgeModal) {
+    knowledgeModal.style.display = 'none';
+    showWizardStep(0); // Reset to first step
+  }
 });
 
 // Extract text from PDF

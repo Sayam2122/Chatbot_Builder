@@ -336,12 +336,18 @@ ${searchResult.context}`;
 
   // Train the knowledge base (APPENDS new data to existing)
   async train(text, append = true) {
+    console.log('🔧 Train called - append:', append);
+    console.log('📊 Current knowledge base size:', this.knowledgeBase ? this.knowledgeBase.length : 0);
+    console.log('📝 New text size:', text.length);
+    
     if (append && this.knowledgeBase && this.knowledgeBase.trim().length > 0) {
       // Append new text to existing knowledge base
       this.knowledgeBase += '\n\n=== NEW DOCUMENT ===\n\n' + text;
+      console.log('✅ Appended new data. Total size:', this.knowledgeBase.length);
     } else {
       // Replace knowledge base (used for initial load or explicit reset)
       this.knowledgeBase = text;
+      console.log('🔄 Replaced knowledge base. Total size:', this.knowledgeBase.length);
     }
     
     // Re-chunk and re-embed the ENTIRE knowledge base
@@ -351,6 +357,8 @@ ${searchResult.context}`;
     // Save to localStorage
     localStorage.setItem('bot-knowledge-base', this.knowledgeBase);
     localStorage.setItem('bot-knowledge-chunks', JSON.stringify(this.chunks));
+    
+    console.log('💾 Saved to localStorage. Chunks:', this.chunks.length);
     
     return {
       chunks: this.chunks.length,
