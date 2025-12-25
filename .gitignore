@@ -1,6 +1,6 @@
 # Environment variables and API keys
 .env
-# config.js - REMOVED so BookEinstein shared key can be deployed
+config.js
 
 # Node modules (if using npm)
 node_modules/
