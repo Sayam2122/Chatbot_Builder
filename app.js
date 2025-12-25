@@ -413,14 +413,19 @@ function startConversationAI(){
     
     let welcomeMsg = 'Welcome, Student! 🎓\n\n';
     
-    if(initialPDFs.length > 0) {
-      welcomeMsg += 'I am your AI Learning Assistant, initially trained on:\n\n';
-      initialPDFs.forEach((pdf, idx) => {
-        welcomeMsg += `📚 ${idx + 1}. ${pdf}\n`;
-      });
-      welcomeMsg += '\nFeel free to ask me any questions about these materials! After answering a few questions, I can also help you learn from your own documents. 😊';
+    // Check if we have trained knowledge base (either from initial PDFs or user training)
+    if(ragSystem.knowledgeBase && ragSystem.knowledgeBase.trim().length > 0) {
+      if(initialPDFs.length > 0) {
+        welcomeMsg += 'I am your AI Learning Assistant, initially trained on:\n\n';
+        initialPDFs.forEach((pdf, idx) => {
+          welcomeMsg += `📚 ${idx + 1}. ${pdf}\n`;
+        });
+        welcomeMsg += '\nFeel free to ask me any questions about these materials! After answering a few questions, I can also help you learn from your own documents. 😊';
+      } else {
+        welcomeMsg += 'I am your AI Learning Assistant! 📖\n\nI have been trained on your documents. Ask me anything about your study materials!';
+      }
     } else {
-      welcomeMsg += 'I am your AI Learning Assistant! 📖\n\nTo get started, click "Start Training" button above to upload your study materials (PDFs or text files), and I\'ll help you learn from them!';
+      welcomeMsg += 'I am your AI Learning Assistant! 📖\n\nTo get started, click "Start Training" button above to upload your study materials (PDFs), and I\'ll help you learn from them!';
     }
     
     appendMessageAI('bot', welcomeMsg);
@@ -1396,7 +1401,7 @@ async function sendMessageAI() {
   }
 
   // Use AI to answer if knowledge base is trained
-  if (ragSystem.knowledgeBase && ragSystem.enabled && ragSystem.apiKey) {
+  if (ragSystem.knowledgeBase && ragSystem.knowledgeBase.trim().length > 0 && ragSystem.apiKey) {
     // Increment question count
     aiQuestionCount++;
     
@@ -1425,7 +1430,12 @@ async function sendMessageAI() {
       }
     }
   } else {
-    appendMessageAI('bot', '⚠️ Please train the AI first by clicking "Start Training" and uploading a document or pasting text content.');
+    // Provide specific error message based on what's missing
+    if (!ragSystem.knowledgeBase || ragSystem.knowledgeBase.trim().length === 0) {
+      appendMessageAI('bot', '⚠️ Please train the AI first by clicking "Start Training" and uploading a PDF document.');
+    } else if (!ragSystem.apiKey) {
+      appendMessageAI('bot', '⚠️ API key not configured. Please check your API settings in the training panel.');
+    }
   }
 }
 
@@ -2146,6 +2156,10 @@ apiKeyInput.addEventListener('input', (e) => {
 const savedOption = localStorage.getItem('apiOption');
 if (savedOption) {
   apiOption.value = savedOption;
+} else {
+  // Default to BookEinstein if no preference saved
+  apiOption.value = 'bookeinstein';
+  localStorage.setItem('apiOption', 'bookeinstein');
 }
 
 // Load saved API key if using own key
@@ -2159,5 +2173,5 @@ if (ragSystem.provider && apiOption.value === 'own') {
   llmProvider.dispatchEvent(new Event('change'));
 }
 
-// Initialize on load
+// Initialize on load - This will configure the RAG system with BookEinstein or user's key
 updateAPIConfig();
