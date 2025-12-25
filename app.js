@@ -226,7 +226,8 @@ async function loadInitialPDFs() {
     // Train the RAG system with all combined text
     if(allText.trim() && initialPDFs.length > 0) {
       console.log('🧠 Training RAG system with combined PDF data...');
-      await ragSystem.train(allText);
+      // Use append=false for initial load to replace any existing data
+      await ragSystem.train(allText, false);
       console.log(`✅ Successfully trained on ${initialPDFs.length} PDF(s)`);
     }
     
@@ -415,14 +416,21 @@ function startConversationAI(){
     
     // Check if we have trained knowledge base (either from initial PDFs or user training)
     if(ragSystem.knowledgeBase && ragSystem.knowledgeBase.trim().length > 0) {
+      const totalKB = (ragSystem.knowledgeBase.length / 1024).toFixed(2);
+      
       if(initialPDFs.length > 0) {
-        welcomeMsg += 'I am your AI Learning Assistant, initially trained on:\n\n';
+        welcomeMsg += 'I am your AI Learning Assistant, trained on:\n\n';
         initialPDFs.forEach((pdf, idx) => {
           welcomeMsg += `📚 ${idx + 1}. ${pdf}\n`;
         });
-        welcomeMsg += '\nFeel free to ask me any questions about these materials! After answering a few questions, I can also help you learn from your own documents. 😊';
+        
+        if(userHasTrained) {
+          welcomeMsg += `\n✨ Plus your custom training data!\n`;
+        }
+        
+        welcomeMsg += `\n📊 Total knowledge: ${totalKB}KB\n\nFeel free to ask me any questions! You can also train me on more documents anytime. 😊`;
       } else {
-        welcomeMsg += 'I am your AI Learning Assistant! 📖\n\nI have been trained on your documents. Ask me anything about your study materials!';
+        welcomeMsg += `I am your AI Learning Assistant! 📖\n\n📊 Knowledge base: ${totalKB}KB\n\nI have been trained on your documents. Ask me anything about your study materials!`;
       }
     } else {
       welcomeMsg += 'I am your AI Learning Assistant! 📖\n\nTo get started, click "Start Training" button above to upload your study materials (PDFs), and I\'ll help you learn from them!';
@@ -1428,6 +1436,14 @@ async function sendMessageAI() {
       if (lastMsg && lastMsg.classList.contains('bot-message')) {
         lastMsg.textContent = '❌ ' + error.message;
       }
+      
+      // If error is about no relevant information, offer to train on new data
+      if (error.message && error.message.includes('NO_RELEVANT_INFO')) {
+        setTimeout(() => {
+          appendMessageAI('bot', '💡 Would you like to train me on additional data to answer this question?\n\nType "yes" to upload more training materials!');
+          aiTrainingOffered = true; // Allow user to train again
+        }, 1500);
+      }
     }
   } else {
     // Provide specific error message based on what's missing
@@ -1852,12 +1868,6 @@ let trainingData = {
 
 // Save knowledge base with wizard interface
 saveKnowledge.addEventListener('click', async () => {
-  // Check if user has already trained with their own PDF
-  if(userHasTrained && currentMode === 'ai') {
-    alert('⚠️ You have already trained me with your document!\n\nYou can only upload one PDF at a time.');
-    return;
-  }
-  
   const textContent = knowledgeText.value.trim();
   if(!textContent){
     alert('⚠️ Please upload a PDF file first.');
@@ -1879,6 +1889,7 @@ saveKnowledge.addEventListener('click', async () => {
     
     // Store data for wizard
     trainingData.fullText = textContent;
+    trainingData.fileName = file.name;
     
     // Move to Step 1: Text Extraction
     showWizardStep(1, file.name);
@@ -1968,10 +1979,15 @@ document.getElementById('backToExtraction').addEventListener('click', () => {
 
 // Next button: Chunking → Embeddings
 document.getElementById('nextToEmbedding').addEventListener('click', async () => {
-  // Train the RAG system (this creates embeddings)
-  const stats = await ragSystem.train(trainingData.fullText);
+  // Train the RAG system with APPEND mode (keeps existing data)
+  const stats = await ragSystem.train(trainingData.fullText, true);
   trainingData.stats = stats;
   trainingData.embeddings = ragSystem.embeddings;
+  
+  // Mark that user has added their own training data
+  if(currentMode === 'ai') {
+    userHasTrained = true;
+  }
   
   // Show step 3
   showWizardStep(3);
@@ -2038,12 +2054,15 @@ document.getElementById('finishTraining').addEventListener('click', () => {
   // Close modal
   if(knowledgeModal) knowledgeModal.style.display = 'none';
   
-  // Reset to step 0
+  // Reset to step 0 and clear form for next upload
   showWizardStep(0);
+  knowledgeText.value = '';
+  knowledgeFileInput.value = '';
   
   // Show success message in chat
   if(currentMode === 'ai' && chatLogAI) {
-    appendMessageAI('bot', '✅ Training complete! You can now ask me questions about your document.');
+    const totalKB = (ragSystem.knowledgeBase.length / 1024).toFixed(2);
+    appendMessageAI('bot', `✅ Training complete! I now have ${totalKB}KB of knowledge.\n\nYou can ask me questions, or train me on more documents by clicking "Start Training" again!`);
   }
 });
 

@@ -184,7 +184,7 @@ class RAGSystem {
     const searchResult = this.searchKnowledgeBase(question);
     
     if (!searchResult) {
-      throw new Error('No relevant information found in knowledge base for this question.');
+      throw new Error('NO_RELEVANT_INFO: I don\'t have enough information in my current knowledge base to answer this question.');
     }
     
     // Check if we should use fallback mode (no API calls)
@@ -334,10 +334,18 @@ ${searchResult.context}`;
     return answer.trim();
   }
 
-  // Train the knowledge base
-  async train(text) {
-    this.knowledgeBase = text;
-    this.chunks = this.createSmartChunks(text);
+  // Train the knowledge base (APPENDS new data to existing)
+  async train(text, append = true) {
+    if (append && this.knowledgeBase && this.knowledgeBase.trim().length > 0) {
+      // Append new text to existing knowledge base
+      this.knowledgeBase += '\n\n=== NEW DOCUMENT ===\n\n' + text;
+    } else {
+      // Replace knowledge base (used for initial load or explicit reset)
+      this.knowledgeBase = text;
+    }
+    
+    // Re-chunk and re-embed the ENTIRE knowledge base
+    this.chunks = this.createSmartChunks(this.knowledgeBase);
     this.embeddings = this.chunks.map(chunk => this.createEmbedding(chunk));
     
     // Save to localStorage
@@ -348,7 +356,7 @@ ${searchResult.context}`;
       chunks: this.chunks.length,
       embeddings: this.embeddings.length,
       vocabulary: new Set(this.embeddings.flatMap(e => Object.keys(e))).size,
-      sizeKB: (text.length / 1024).toFixed(2)
+      sizeKB: (this.knowledgeBase.length / 1024).toFixed(2)
     };
   }
 
