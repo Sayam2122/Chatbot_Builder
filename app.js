@@ -164,7 +164,7 @@ async function loadInitialPDFs() {
     // Note: This requires a file listing endpoint or manual array of PDF names
     // For now, we'll use a hardcoded list that user can update
     const pdfFiles = [
-      'thebook.pdf',
+      'machine_learning.pdf',
     ];
     
     if(pdfFiles.length === 0) {
@@ -1827,7 +1827,15 @@ function cosineSimilarity(emb1, emb2) {
   return dotProduct / (Math.sqrt(mag1) * Math.sqrt(mag2));
 }
 
-// Save knowledge base with visual processing
+// Wizard navigation variables
+let trainingData = {
+  fullText: '',
+  chunks: [],
+  embeddings: [],
+  stats: {}
+};
+
+// Save knowledge base with wizard interface
 saveKnowledge.addEventListener('click', async () => {
   // Check if user has already trained with their own PDF
   if(userHasTrained && currentMode === 'ai') {
@@ -1850,24 +1858,141 @@ saveKnowledge.addEventListener('click', async () => {
       alert('⚠️ Only PDF files are allowed!\n\nPlease upload a PDF document.');
       return;
     }
+    
+    // Store data for wizard
+    trainingData.fullText = textContent;
+    
+    // Move to Step 1: Text Extraction
+    showWizardStep(1, file.name);
   } else {
     alert('⚠️ Please upload a PDF file first.');
     return;
   }
-  
-  // Show progress indicator
-  const progressDiv = document.getElementById('trainingProgress');
-  const progressText = document.getElementById('progressText');
-  if(progressDiv) {
-    progressDiv.style.display = 'block';
-    progressText.textContent = 'Processing your document...';
+});
+
+// Wizard step navigation function
+function showWizardStep(stepNumber, fileName = '') {
+  // Hide all steps
+  for(let i = 0; i <= 4; i++) {
+    const step = document.getElementById(`step${i}`);
+    if(step) step.style.display = 'none';
   }
   
-  // Use RAG system to train
-  const stats = await ragSystem.train(textContent);
+  // Show current step
+  const currentStep = document.getElementById(`step${stepNumber}`);
+  if(currentStep) currentStep.style.display = 'block';
   
+  // Update modal title
+  const modalTitle = document.getElementById('modalTitle');
+  const titles = [
+    '📚 Train Your AI Assistant',
+    '📄 Step 1: Extracting Text',
+    '✂️ Step 2: Text Chunking',
+    '🧮 Step 3: Creating Embeddings',
+    '✅ Training Complete!'
+  ];
+  if(modalTitle) modalTitle.textContent = titles[stepNumber];
+  
+  // Handle each step
+  if(stepNumber === 1) {
+    // Show extraction progress
+    if(fileName) {
+      document.getElementById('fileName').textContent = fileName;
+    }
+    document.getElementById('charCount').textContent = trainingData.fullText.length.toLocaleString();
+    const preview = trainingData.fullText.substring(0, 500);
+    document.getElementById('textPreview').textContent = preview + (trainingData.fullText.length > 500 ? '\n\n...' : '');
+    document.getElementById('pageProgress').textContent = '✅ Extraction complete!';
+  }
+}
+
+// Next button: Extraction → Chunking
+document.getElementById('nextToChunking').addEventListener('click', async () => {
+  // Perform chunking
+  const chunkSize = 500;
+  const chunks = [];
+  const text = trainingData.fullText;
+  
+  for(let i = 0; i < text.length; i += chunkSize) {
+    chunks.push(text.substring(i, i + chunkSize));
+  }
+  
+  trainingData.chunks = chunks;
+  
+  // Show step 2
+  showWizardStep(2);
+  
+  // Display chunks
+  document.getElementById('chunkCountDisplay').textContent = chunks.length;
+  const chunksList = document.getElementById('chunkExamplesList');
+  chunksList.innerHTML = '';
+  
+  const chunksToShow = Math.min(5, chunks.length);
+  for(let i = 0; i < chunksToShow; i++) {
+    const preview = chunks[i].substring(0, 100) + (chunks[i].length > 100 ? '...' : '');
+    chunksList.innerHTML += `
+      <div style="margin:8px 0;padding:10px;background:#f9f9f9;border-left:3px solid #4caf50;border-radius:4px;">
+        <strong style="color:#2e7d32;">Chunk ${i+1}:</strong>
+        <div style="font-size:11px;color:#555;margin-top:5px;">"${preview}"</div>
+      </div>
+    `;
+  }
+  
+  if(chunks.length > 5) {
+    chunksList.innerHTML += `<div style="text-align:center;color:#888;font-size:12px;margin-top:10px;">... and ${chunks.length - 5} more chunks</div>`;
+  }
+});
+
+// Back button: Chunking → Extraction
+document.getElementById('backToExtraction').addEventListener('click', () => {
+  showWizardStep(1);
+});
+
+// Next button: Chunking → Embeddings
+document.getElementById('nextToEmbedding').addEventListener('click', async () => {
+  // Train the RAG system (this creates embeddings)
+  const stats = await ragSystem.train(trainingData.fullText);
+  trainingData.stats = stats;
+  trainingData.embeddings = ragSystem.embeddings;
+  
+  // Show step 3
+  showWizardStep(3);
+  
+  // Display embeddings
+  document.getElementById('embeddingCountDisplay').textContent = ragSystem.embeddings.length;
+  const embeddingsList = document.getElementById('embeddingExamplesList');
+  embeddingsList.innerHTML = '';
+  
+  const embeddingsToShow = Math.min(5, ragSystem.embeddings.length);
+  for(let i = 0; i < embeddingsToShow; i++) {
+    const embedding = ragSystem.embeddings[i];
+    const vectorPreview = Object.entries(embedding).slice(0, 5).map(([word, val]) => `${word}:${val.toFixed(2)}`).join(', ');
+    const vectorSize = Object.keys(embedding).length;
+    
+    embeddingsList.innerHTML += `
+      <div style="margin:8px 0;padding:10px;background:#f9f9f9;border-left:3px solid #2196f3;border-radius:4px;">
+        <strong style="color:#1976d2;">Vector ${i+1}:</strong>
+        <div style="font-size:10px;color:#555;margin-top:5px;font-family:monospace;">
+          [${vectorPreview}... <em>${vectorSize} dimensions</em>]
+        </div>
+      </div>
+    `;
+  }
+  
+  if(ragSystem.embeddings.length > 5) {
+    embeddingsList.innerHTML += `<div style="text-align:center;color:#888;font-size:12px;margin-top:10px;">... and ${ragSystem.embeddings.length - 5} more embeddings</div>`;
+  }
+});
+
+// Back button: Embeddings → Chunking
+document.getElementById('backToChunking').addEventListener('click', () => {
+  showWizardStep(2);
+});
+
+// Next button: Embeddings → Storage Complete
+document.getElementById('nextToStorage').addEventListener('click', () => {
   // Update backward compatibility variables
-  knowledgeBase = textContent;
+  knowledgeBase = trainingData.fullText;
   knowledgeChunks = ragSystem.chunks;
   knowledgeEmbeddings = ragSystem.embeddings;
   
@@ -1876,26 +2001,31 @@ saveKnowledge.addEventListener('click', async () => {
     userHasTrained = true;
   }
   
-  // Update UI stats
-  document.getElementById('chunkCount').textContent = `Chunks: ${stats.chunks}`;
-  document.getElementById('embeddingCount').textContent = `Embeddings: ${stats.embeddings}`;
-  document.getElementById('storageSize').textContent = `Size: ${stats.sizeKB} KB`;
+  // Show final step
+  showWizardStep(4);
   
-  // Update progress
-  if(progressText) {
-    progressText.textContent = '✅ Training completed successfully!';
-    progressText.style.color = '#2e7d32';
-  }
+  // Display final stats
+  const stats = trainingData.stats;
+  document.getElementById('finalChunkCount').textContent = stats.chunks;
+  document.getElementById('finalEmbeddingCount').textContent = stats.embeddings;
+  document.getElementById('finalVocabSize').textContent = stats.vocabulary;
+  document.getElementById('finalStorageSize').textContent = stats.sizeKB;
   
   const llmStatus = ragSystem.enabled && ragSystem.apiKey ? '✅ LLM Ready' : '⚠️ LLM Not Configured';
+  document.getElementById('finalLLMStatus').textContent = llmStatus;
+});
+
+// Finish button: Close modal
+document.getElementById('finishTraining').addEventListener('click', () => {
+  // Close modal
+  if(knowledgeModal) knowledgeModal.style.display = 'none';
   
-  alert(`✅ Knowledge base trained successfully!\n\n📊 Stats:\n- ${stats.chunks} chunks created\n- ${stats.embeddings} embeddings generated\n- ${stats.vocabulary} unique terms indexed\n- ${stats.sizeKB} KB stored\n- ${llmStatus}\n\n${ragSystem.enabled ? 'The bot can now use AI to answer questions with conversation memory!' : 'Enable LLM mode for AI-powered answers'}`);
+  // Reset to step 0
+  showWizardStep(0);
   
-  // Hide progress after alert
-  if(progressDiv) {
-    setTimeout(() => {
-      progressDiv.style.display = 'none';
-    }, 2000);
+  // Show success message in chat
+  if(currentMode === 'ai' && chatLogAI) {
+    appendMessageAI('bot', '✅ Training complete! You can now ask me questions about your document.');
   }
 });
 

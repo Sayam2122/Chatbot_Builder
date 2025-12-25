@@ -117,77 +117,191 @@
     <div class="modal modal-large" id="knowledgeModal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>📚 Train Your AI Assistant</h3>
+          <h3 id="modalTitle">📚 Train Your AI Assistant</h3>
           <button class="close-btn" id="closeKnowledgeModal">✕</button>
         </div>
         <div class="modal-body">
-          <p style="margin-bottom:12px;color:#666">Upload a PDF file to train your AI assistant.</p>
-          <label>
-            <span>Upload PDF File</span>
-            <input type="file" id="knowledgeFileInput" accept=".pdf" />
-          </label>
-          <div id="uploadStatus" style="font-size:12px;color:#666;margin:8px 0;display:none"></div>
           
-          <!-- Hidden textarea for internal use (populated by PDF processing) -->
-          <textarea id="knowledgeText" style="display:none;"></textarea>
-          
-          <div style="margin-top:12px;padding:10px;background:#e8f5e9;border-radius:6px;border:1px solid #66bb6a">
-            <h4 style="margin:0 0 10px 0;font-size:14px;color:#2e7d32">🤖 AI Configuration</h4>
-            
-            <label style="font-size:12px;display:block;margin-bottom:8px">
-              <strong>Choose API Option:</strong>
-              <select id="apiOption" style="width:100%;padding:8px;margin-top:4px;font-size:13px;border:2px solid #66bb6a;border-radius:4px">
-                <option value="bookeinstein">Use BookEinstein API (Recommended - No key needed!)</option>
-                <option value="own">Use Your Own API Key</option>
-              </select>
+          <!-- Step 0: Upload Screen -->
+          <div id="step0" class="wizard-step active">
+            <p style="margin-bottom:12px;color:#666">Upload a PDF file to train your AI assistant.</p>
+            <label>
+              <span>Upload PDF File</span>
+              <input type="file" id="knowledgeFileInput" accept=".pdf" />
             </label>
-
-            <div id="ownKeySettings" style="display:none;margin-top:12px;padding:10px;background:#fff;border-radius:4px;border:1px solid #ddd">
+            <div id="uploadStatus" style="font-size:12px;color:#666;margin:8px 0;display:none"></div>
+            
+            <!-- Hidden textarea for internal use (populated by PDF processing) -->
+            <textarea id="knowledgeText" style="display:none;"></textarea>
+            
+            <div style="margin-top:12px;padding:10px;background:#e8f5e9;border-radius:6px;border:1px solid #66bb6a">
+              <h4 style="margin:0 0 10px 0;font-size:14px;color:#2e7d32">🤖 AI Configuration</h4>
+              
               <label style="font-size:12px;display:block;margin-bottom:8px">
-                <strong>Provider:</strong>
-                <select id="llmProvider" style="width:100%;padding:6px;margin-top:4px;font-size:12px">
-                  <option value="gemini">Google Gemini (FREE)</option>
-                  <option value="openai">OpenAI (requires billing)</option>
+                <strong>Choose API Option:</strong>
+                <select id="apiOption" style="width:100%;padding:8px;margin-top:4px;font-size:13px;border:2px solid #66bb6a;border-radius:4px">
+                  <option value="bookeinstein">Use BookEinstein API (Recommended - No key needed!)</option>
+                  <option value="own">Use Your Own API Key</option>
                 </select>
               </label>
-              <input type="text" id="apiKey" placeholder="Enter your API Key" style="width:100%;font-size:12px;padding:8px;margin-bottom:8px" />
-              <div id="providerInfo" style="font-size:11px;color:#666">
-                <p id="geminiInfo">
-                  <strong>📝 How to get FREE Gemini API Key:</strong><br>
-                  1. Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#1976d2">aistudio.google.com/app/apikey</a><br>
-                  2. Sign in with Google account<br>
-                  3. Click "Create API Key"<br>
-                  4. Copy and paste it above ✨
-                </p>
-                <p id="openaiInfo" style="display:none">
-                  Get key at <a href="https://platform.openai.com/api-keys" target="_blank" style="color:#1976d2">platform.openai.com/api-keys</a> (needs billing)
+
+              <div id="ownKeySettings" style="display:none;margin-top:12px;padding:10px;background:#fff;border-radius:4px;border:1px solid #ddd">
+                <label style="font-size:12px;display:block;margin-bottom:8px">
+                  <strong>Provider:</strong>
+                  <select id="llmProvider" style="width:100%;padding:6px;margin-top:4px;font-size:12px">
+                    <option value="gemini">Google Gemini (FREE)</option>
+                    <option value="openai">OpenAI (requires billing)</option>
+                  </select>
+                </label>
+                <input type="text" id="apiKey" placeholder="Enter your API Key" style="width:100%;font-size:12px;padding:8px;margin-bottom:8px" />
+                <div id="providerInfo" style="font-size:11px;color:#666">
+                  <p id="geminiInfo">
+                    <strong>📝 How to get FREE Gemini API Key:</strong><br>
+                    1. Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#1976d2">aistudio.google.com/app/apikey</a><br>
+                    2. Sign in with Google account<br>
+                    3. Click "Create API Key"<br>
+                    4. Copy and paste it above ✨
+                  </p>
+                  <p id="openaiInfo" style="display:none">
+                    Get key at <a href="https://platform.openai.com/api-keys" target="_blank" style="color:#1976d2">platform.openai.com/api-keys</a> (needs billing)
+                  </p>
+                </div>
+              </div>
+
+              <div id="bookEinsteinInfo" style="margin-top:10px;padding:8px;background:#fff;border-radius:4px;font-size:12px;color:#555">
+                ✅ <strong>Using BookEinstein's Gemini API</strong> - Free and ready to use! No configuration needed.
+              </div>
+            </div>
+            
+            <div class="modal-footer" style="margin-top:15px">
+              <button class="btn-secondary" id="clearKnowledge">Clear Knowledge</button>
+              <button class="btn-primary" id="saveKnowledge">Start Training →</button>
+            </div>
+          </div>
+
+          <!-- Step 1: Text Extraction -->
+          <div id="step1" class="wizard-step" style="display:none;">
+            <div style="text-align:center;padding:20px;">
+              <div style="font-size:48px;margin-bottom:15px;">📄</div>
+              <h3 style="color:#2e7d32;margin-bottom:10px;">Step 1: Extracting Text</h3>
+              <p style="color:#666;margin-bottom:20px;">Reading and extracting text from your PDF file...</p>
+              
+              <div id="extractionProgress" style="background:#f5f5f5;padding:20px;border-radius:8px;margin:20px 0;">
+                <div style="font-size:14px;color:#333;margin-bottom:10px;">
+                  <strong>Processing:</strong> <span id="fileName">document.pdf</span>
+                </div>
+                <div style="font-size:12px;color:#666;">
+                  <span id="pageProgress">Extracting pages...</span>
+                </div>
+                <div style="margin-top:15px;padding:15px;background:#fff;border-radius:6px;text-align:left;max-height:200px;overflow-y:auto;">
+                  <strong style="color:#2e7d32;">📝 Extracted Text Preview:</strong>
+                  <div id="textPreview" style="margin-top:10px;font-size:11px;color:#555;line-height:1.6;white-space:pre-wrap;"></div>
+                </div>
+              </div>
+              
+              <div style="font-size:12px;color:#888;margin-top:15px;">
+                ✅ Total characters extracted: <strong id="charCount">0</strong>
+              </div>
+            </div>
+            
+            <div class="modal-footer">
+              <button class="btn-primary" id="nextToChunking">Next: Chunking →</button>
+            </div>
+          </div>
+
+          <!-- Step 2: Chunking -->
+          <div id="step2" class="wizard-step" style="display:none;">
+            <div style="text-align:center;padding:20px;">
+              <div style="font-size:48px;margin-bottom:15px;">✂️</div>
+              <h3 style="color:#2e7d32;margin-bottom:10px;">Step 2: Text Chunking</h3>
+              <p style="color:#666;margin-bottom:20px;">Breaking down text into smaller, manageable chunks for better AI understanding...</p>
+              
+              <div style="background:#f5f5f5;padding:20px;border-radius:8px;margin:20px 0;">
+                <div style="font-size:14px;color:#333;margin-bottom:15px;">
+                  <strong>Created Chunks:</strong> <span id="chunkCountDisplay">0</span>
+                </div>
+                
+                <div style="background:#fff;border-radius:6px;padding:15px;text-align:left;max-height:300px;overflow-y:auto;">
+                  <strong style="color:#4caf50;">📝 Chunk Examples:</strong>
+                  <div id="chunkExamplesList" style="margin-top:10px;"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="modal-footer">
+              <button class="btn-secondary" id="backToExtraction">← Back</button>
+              <button class="btn-primary" id="nextToEmbedding">Next: Embeddings →</button>
+            </div>
+          </div>
+
+          <!-- Step 3: Embeddings -->
+          <div id="step3" class="wizard-step" style="display:none;">
+            <div style="text-align:center;padding:20px;">
+              <div style="font-size:48px;margin-bottom:15px;">🧮</div>
+              <h3 style="color:#2e7d32;margin-bottom:10px;">Step 3: Creating Embeddings</h3>
+              <p style="color:#666;margin-bottom:20px;">Converting text chunks into AI-readable vectors (embeddings)...</p>
+              
+              <div style="background:#f5f5f5;padding:20px;border-radius:8px;margin:20px 0;">
+                <div style="font-size:14px;color:#333;margin-bottom:15px;">
+                  <strong>Generated Embeddings:</strong> <span id="embeddingCountDisplay">0</span>
+                </div>
+                
+                <div style="background:#fff;border-radius:6px;padding:15px;text-align:left;max-height:300px;overflow-y:auto;">
+                  <strong style="color:#2196f3;">🔢 Embedding Examples:</strong>
+                  <div id="embeddingExamplesList" style="margin-top:10px;"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="modal-footer">
+              <button class="btn-secondary" id="backToChunking">← Back</button>
+              <button class="btn-primary" id="nextToStorage">Next: Store in Memory →</button>
+            </div>
+          </div>
+
+          <!-- Step 4: Storage Complete -->
+          <div id="step4" class="wizard-step" style="display:none;">
+            <div style="text-align:center;padding:20px;">
+              <div style="font-size:48px;margin-bottom:15px;">✅</div>
+              <h3 style="color:#2e7d32;margin-bottom:10px;">Training Complete!</h3>
+              <p style="color:#666;margin-bottom:20px;">Your AI assistant has been successfully trained on your document.</p>
+              
+              <div style="background:#e8f5e9;padding:20px;border-radius:8px;margin:20px 0;border:2px solid #4caf50;">
+                <h4 style="margin:0 0 15px 0;color:#2e7d32;">📊 Training Summary</h4>
+                <div style="text-align:left;font-size:13px;color:#333;">
+                  <div style="padding:8px;margin:5px 0;background:#fff;border-radius:4px;">
+                    ✂️ <strong>Chunks Created:</strong> <span id="finalChunkCount">0</span>
+                  </div>
+                  <div style="padding:8px;margin:5px 0;background:#fff;border-radius:4px;">
+                    🧮 <strong>Embeddings Generated:</strong> <span id="finalEmbeddingCount">0</span>
+                  </div>
+                  <div style="padding:8px;margin:5px 0;background:#fff;border-radius:4px;">
+                    📚 <strong>Vocabulary Size:</strong> <span id="finalVocabSize">0</span> unique terms
+                  </div>
+                  <div style="padding:8px;margin:5px 0;background:#fff;border-radius:4px;">
+                    💾 <strong>Storage Size:</strong> <span id="finalStorageSize">0</span> KB
+                  </div>
+                  <div style="padding:8px;margin:5px 0;background:#fff;border-radius:4px;">
+                    🤖 <strong>LLM Status:</strong> <span id="finalLLMStatus">✅ Ready</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background:#fff3cd;padding:15px;border-radius:6px;margin-top:20px;border:1px solid #ffc107;">
+                <p style="margin:0;color:#856404;font-size:13px;">
+                  🎉 <strong>You're all set!</strong> You can now close this window and start asking questions about your document.
                 </p>
               </div>
             </div>
+            
+            <div class="modal-footer">
+              <button class="btn-primary" id="finishTraining">Done</button>
+            </div>
+          </div>
 
-            <div id="bookEinsteinInfo" style="margin-top:10px;padding:8px;background:#fff;border-radius:4px;font-size:12px;color:#555">
-              ✅ <strong>Using BookEinstein's Gemini API</strong> - Free and ready to use! No configuration needed.
-            </div>
-          </div>
-          
-          <!-- Simple progress indicator -->
-          <div id="trainingProgress" style="display:none;margin-top:15px;padding:12px;background:#f5f5f5;border-radius:6px;border:1px solid #ddd">
-            <div style="font-size:13px;color:#666;margin-bottom:8px">
-              <strong>Training Status:</strong>
-              <div id="progressText" style="margin-top:5px;color:#2e7d32">Processing your document...</div>
-            </div>
-            <div id="progressStats" style="font-size:11px;color:#888;margin-top:8px">
-              <span id="chunkCount">Chunks: 0</span> • 
-              <span id="embeddingCount">Embeddings: 0</span> • 
-              <span id="storageSize">Size: 0 KB</span>
-            </div>
-          </div>
-          
-          <div class="modal-footer" style="margin-top:15px">
-            <button class="btn-secondary" id="clearKnowledge">Clear Knowledge</button>
-            <button class="btn-primary" id="saveKnowledge">Save & Train</button>
-          </div>
         </div>
+      </div>
+    </div>
       </div>
     </div>
 
