@@ -172,7 +172,7 @@ async function loadInitialPDFs() {
       return;
     }
     
-    console.log('📚 Loading initial PDFs...');
+    console.log('📚 Starting to load initial PDFs...');
     
     // Show loading message
     if(chatLogAI) {
@@ -180,14 +180,18 @@ async function loadInitialPDFs() {
     }
     
     initialPDFs = [];
+    let allText = ''; // Combine all PDF text
     
     for(const pdfFile of pdfFiles) {
       try {
+        console.log(`📄 Loading PDF: ${pdfFile}`);
         const pdfUrl = `./books/${pdfFile}`;
         
         // Load PDF using PDF.js
         const loadingTask = pdfjsLib.getDocument(pdfUrl);
         const pdf = await loadingTask.promise;
+        
+        console.log(`📖 PDF loaded: ${pdf.numPages} pages`);
         
         let fullText = '';
         
@@ -199,29 +203,38 @@ async function loadInitialPDFs() {
           fullText += pageText + '\n';
         }
         
-        // Train the RAG system with this PDF
+        console.log(`✅ Extracted ${fullText.length} characters from ${pdfFile}`);
+        
+        // Add to combined text
         if(fullText.trim()) {
-          await ragSystem.train(fullText);
+          allText += fullText + '\n\n';
           initialPDFs.push(pdfFile);
-          console.log(`✅ Loaded and trained: ${pdfFile}`);
+          console.log(`✅ Added ${pdfFile} to training data`);
         }
         
       } catch(error) {
         console.error(`❌ Error loading ${pdfFile}:`, error);
+        alert(`⚠️ Could not load ${pdfFile}. Please check:\n1. File exists in books/ folder\n2. File is a valid PDF\n3. Check browser console for details`);
       }
     }
     
+    // Train the RAG system with all combined text
+    if(allText.trim() && initialPDFs.length > 0) {
+      console.log('🧠 Training RAG system with combined PDF data...');
+      await ragSystem.train(allText);
+      console.log(`✅ Successfully trained on ${initialPDFs.length} PDF(s)`);
+    }
+    
     // Clear loading message
-    if(chatLogAI && initialPDFs.length > 0) {
+    if(chatLogAI) {
       chatLogAI.innerHTML = '';
     }
     
-    if(initialPDFs.length > 0) {
-      console.log(`✅ Successfully loaded ${initialPDFs.length} PDF(s) for initial training`);
-    }
-    
   } catch(error) {
-    console.error('Error loading initial PDFs:', error);
+    console.error('❌ Error in loadInitialPDFs:', error);
+    if(chatLogAI) {
+      chatLogAI.innerHTML = '';
+    }
   }
 }
 
@@ -238,9 +251,12 @@ function switchToAIMode() {
   if(toggleCasual) toggleCasual.classList.remove('active');
   if(toggleAI) toggleAI.classList.add('active');
   
-  // Load initial PDFs and start AI conversation
+  // Load initial PDFs first, then start conversation
   loadInitialPDFs().then(() => {
     startConversationAI();
+  }).catch((error) => {
+    console.error('Error loading initial PDFs:', error);
+    startConversationAI(); // Show welcome message even if PDF loading fails
   });
 }
 
@@ -390,16 +406,16 @@ function startConversationAI(){
   if(chatLogAI) {
     chatLogAI.innerHTML = '';
     
-    let welcomeMsg = 'Welcome to AI Bot! 🤖\n\n';
+    let welcomeMsg = 'Welcome, Student! 🎓\n\n';
     
     if(initialPDFs.length > 0) {
-      welcomeMsg += 'I am initially trained on the following documents:\n';
+      welcomeMsg += 'I am your AI Learning Assistant, initially trained on:\n\n';
       initialPDFs.forEach((pdf, idx) => {
-        welcomeMsg += `${idx + 1}. ${pdf}\n`;
+        welcomeMsg += `📚 ${idx + 1}. ${pdf}\n`;
       });
-      welcomeMsg += '\nYou can ask me any questions about these topics!';
+      welcomeMsg += '\nFeel free to ask me any questions about these materials! After answering a few questions, I can also help you learn from your own documents. 😊';
     } else {
-      welcomeMsg += 'I can answer questions based on documents you train me with. Click "Start Training" to teach me from your books, PDFs, or text files!';
+      welcomeMsg += 'I am your AI Learning Assistant! 📖\n\nTo get started, click "Start Training" button above to upload your study materials (PDFs or text files), and I\'ll help you learn from them!';
     }
     
     appendMessageAI('bot', welcomeMsg);
