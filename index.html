@@ -13,11 +13,11 @@
       <div class="mode-toggle" id="modeToggle" style="display:none;">
         <button class="toggle-btn active" id="toggleCasual" data-mode="casual">
           <span class="toggle-icon">🎯</span>
-          <span class="toggle-label">Casual Bot</span>
+          <span class="toggle-label">Flow Bot</span>
         </button>
         <button class="toggle-btn" id="toggleAI" data-mode="ai">
           <span class="toggle-icon">🤖</span>
-          <span class="toggle-label">AI Bot</span>
+          <span class="toggle-label">AI Learn Bot</span>
         </button>
       </div>
     </div>
@@ -34,13 +34,15 @@
         <div class="mode-buttons">
           <button class="mode-btn casual-mode-btn" id="casualModeBtn">
             <div class="mode-icon">🎯</div>
-            <h3>Casual Bot</h3>
-            <p>Build conversational flows with node-based logic. Perfect for rule-based conversations!</p>
+            <h3>Flow Bot</h3>
+            <p>Build conversations using customizable nodes and predefined logic.<br><br>
+            Each node represents a step in the conversation, where you define user inputs, conditions, and responses. The bot follows a decision-tree flow, making it ideal for rule-based chats like FAQs, forms, and guided interactions—no AI training required.</p>
           </button>
           <button class="mode-btn ai-mode-btn" id="aiModeBtn">
             <div class="mode-icon">🤖</div>
-            <h3>AI Bot</h3>
-            <p>Train with documents and let AI answer questions. Powered by machine learning!</p>
+            <h3>AI Learn Bot</h3>
+            <p>Train with documents, use pretrained models, and let AI answer intelligently.<br><br>
+            You can upload learning material or documents to train the bot, or start with a pretrained AI model. The bot understands user queries in natural language and generates context-aware responses, improving its answers as more data is added.</p>
           </button>
         </div>
       </div>
@@ -56,7 +58,7 @@
       <!-- Bot Chat Panel (always visible in Casual mode) -->
       <div class="bot-panel" id="botPanel">
         <div class="panel-header">
-          <h2>🤖 Chat with Bot</h2>
+          <h2>🎯 Chat with Flow Bot</h2>
           <div style="display:flex;gap:8px;">
             <button id="customizeNodesBtn" class="customize-btn" style="display:none;">🎨 Customize Nodes</button>
             <button id="mainMenuBtn" class="main-menu-btn" style="display:none;">🏠 Main Menu</button>
@@ -95,7 +97,7 @@
       <!-- Bot Chat Panel (always visible in AI mode) -->
       <div class="bot-panel" id="botPanelAI">
         <div class="panel-header">
-          <h2>🤖 Chat with AI Bot</h2>
+          <h2>🤖 Chat with AI Learn Bot</h2>
           <div>
             <button id="openTrainingBtn" class="reset-btn" style="margin-right:8px">📚 Start Training</button>
             <button id="resetChatAI" class="reset-btn">🔄 Reset</button>
