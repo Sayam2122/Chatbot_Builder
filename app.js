@@ -29,6 +29,12 @@ let isCustomizeMode = false; // Track if user is in customize mode
 let questionCount = 0; // Track number of questions asked
 let customizeOffered = false; // Track if customize option has been offered
 
+// AI mode tracking
+let aiQuestionCount = 0; // Track questions in AI mode
+let aiTrainingOffered = false; // Track if training offer shown
+let userHasTrained = false; // Track if user uploaded their own PDF
+let initialPDFs = []; // Store names of initially loaded PDFs
+
 // Modal elements
 const editModal = document.getElementById('editModal');
 const closeModal = document.getElementById('closeModal');
@@ -152,6 +158,73 @@ function switchToCasualMode() {
   startConversation();
 }
 
+// Auto-load PDFs from books folder for initial training
+async function loadInitialPDFs() {
+  try {
+    // Note: This requires a file listing endpoint or manual array of PDF names
+    // For now, we'll use a hardcoded list that user can update
+    const pdfFiles = [
+      'thebook.pdf',
+    ];
+    
+    if(pdfFiles.length === 0) {
+      console.log('ℹ️ No initial PDFs configured in books folder');
+      return;
+    }
+    
+    console.log('📚 Loading initial PDFs...');
+    
+    // Show loading message
+    if(chatLogAI) {
+      appendMessageAI('bot', '📚 Loading initial training documents, please wait...');
+    }
+    
+    initialPDFs = [];
+    
+    for(const pdfFile of pdfFiles) {
+      try {
+        const pdfUrl = `./books/${pdfFile}`;
+        
+        // Load PDF using PDF.js
+        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+        const pdf = await loadingTask.promise;
+        
+        let fullText = '';
+        
+        // Extract text from all pages
+        for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          fullText += pageText + '\n';
+        }
+        
+        // Train the RAG system with this PDF
+        if(fullText.trim()) {
+          await ragSystem.train(fullText);
+          initialPDFs.push(pdfFile);
+          console.log(`✅ Loaded and trained: ${pdfFile}`);
+        }
+        
+      } catch(error) {
+        console.error(`❌ Error loading ${pdfFile}:`, error);
+      }
+    }
+    
+    // Clear loading message
+    if(chatLogAI && initialPDFs.length > 0) {
+      chatLogAI.innerHTML = '';
+    }
+    
+    if(initialPDFs.length > 0) {
+      console.log(`✅ Successfully loaded ${initialPDFs.length} PDF(s) for initial training`);
+    }
+    
+  } catch(error) {
+    console.error('Error loading initial PDFs:', error);
+  }
+}
+
 function switchToAIMode() {
   currentMode = 'ai';
   modeSwitcher.style.display = 'none';
@@ -165,8 +238,10 @@ function switchToAIMode() {
   if(toggleCasual) toggleCasual.classList.remove('active');
   if(toggleAI) toggleAI.classList.add('active');
   
-  // Start AI conversation automatically
-  startConversationAI();
+  // Load initial PDFs and start AI conversation
+  loadInitialPDFs().then(() => {
+    startConversationAI();
+  });
 }
 
 function showCanvasView() {
@@ -307,10 +382,27 @@ function startConversation(){
 }
 
 function startConversationAI(){
+  // Reset AI question count and training state
+  aiQuestionCount = 0;
+  aiTrainingOffered = false;
+  
   // clear AI chat log and show welcome message
   if(chatLogAI) {
     chatLogAI.innerHTML = '';
-    appendMessageAI('bot', 'Welcome to AI Bot! 🤖\n\nI can answer questions based on documents you train me with. Click "Start Training" to teach me from your books, PDFs, or text files!');
+    
+    let welcomeMsg = 'Welcome to AI Bot! 🤖\n\n';
+    
+    if(initialPDFs.length > 0) {
+      welcomeMsg += 'I am initially trained on the following documents:\n';
+      initialPDFs.forEach((pdf, idx) => {
+        welcomeMsg += `${idx + 1}. ${pdf}\n`;
+      });
+      welcomeMsg += '\nYou can ask me any questions about these topics!';
+    } else {
+      welcomeMsg += 'I can answer questions based on documents you train me with. Click "Start Training" to teach me from your books, PDFs, or text files!';
+    }
+    
+    appendMessageAI('bot', welcomeMsg);
   }
 }
 
@@ -1272,9 +1364,21 @@ async function sendMessageAI() {
   
   appendMessageAI('user', text);
   userMessageAI.value = '';
+  
+  // Check if user responding "yes" to training offer
+  if(aiTrainingOffered && (text.toLowerCase() === 'yes' || text.toLowerCase().includes('yes'))) {
+    appendMessageAI('bot', '📚 Great! Opening the training panel where you can upload your PDF...');
+    setTimeout(() => {
+      if(knowledgeModal) knowledgeModal.style.display = 'flex';
+    }, 1000);
+    return;
+  }
 
   // Use AI to answer if knowledge base is trained
   if (ragSystem.knowledgeBase && ragSystem.enabled && ragSystem.apiKey) {
+    // Increment question count
+    aiQuestionCount++;
+    
     appendMessageAI('bot', '🤔 Searching knowledge base and generating answer...');
     
     try {
@@ -1283,6 +1387,15 @@ async function sendMessageAI() {
       if (lastMsg && lastMsg.classList.contains('bot-message')) {
         lastMsg.textContent = llmAnswer;
       }
+      
+      // After 3 questions, offer training option
+      if(aiQuestionCount === 3 && !aiTrainingOffered && !userHasTrained) {
+        aiTrainingOffered = true;
+        setTimeout(() => {
+          appendMessageAI('bot', '💡 You can also train me on your own data!\n\nWould you like to upload your own PDF document? (Type "yes" to proceed)');
+        }, 1500);
+      }
+      
     } catch (error) {
       console.error('LLM Error:', error);
       const lastMsg = chatLogAI.lastElementChild;
@@ -1700,10 +1813,29 @@ function cosineSimilarity(emb1, emb2) {
 
 // Save knowledge base with visual processing
 saveKnowledge.addEventListener('click', async () => {
+  // Check if user has already trained with their own PDF
+  if(userHasTrained && currentMode === 'ai') {
+    alert('⚠️ You have already trained me with your document!\n\nYou can only upload one PDF at a time.');
+    return;
+  }
+  
   const textContent = knowledgeText.value.trim();
   if(!textContent){
     alert('Please upload a file or paste some text content first.');
     return;
+  }
+  
+  // Check if file was uploaded (only allow PDF in AI mode after initial training)
+  if(knowledgeFileInput.files.length > 0) {
+    const file = knowledgeFileInput.files[0];
+    
+    // In AI mode, only allow PDF files
+    if(currentMode === 'ai' && aiTrainingOffered) {
+      if(!file.name.toLowerCase().endsWith('.pdf')) {
+        alert('⚠️ Only PDF files are allowed!\n\nPlease upload a PDF document.');
+        return;
+      }
+    }
   }
   
   // Reset all steps
@@ -1737,6 +1869,11 @@ saveKnowledge.addEventListener('click', async () => {
   knowledgeBase = textContent;
   knowledgeChunks = ragSystem.chunks;
   knowledgeEmbeddings = ragSystem.embeddings;
+  
+  // Mark that user has trained (if in AI mode and was offered training)
+  if(currentMode === 'ai' && aiTrainingOffered) {
+    userHasTrained = true;
+  }
   
   // Update UI stats
   document.getElementById('chunkCount').textContent = `Chunks: ${stats.chunks}`;

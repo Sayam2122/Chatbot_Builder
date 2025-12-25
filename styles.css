@@ -153,18 +153,13 @@ body{
 }
 .ai-bot-section{
   display:flex;
-  flex-direction:column;
+  flex-direction:row;
   background:linear-gradient(180deg, #f0f8ff 0%, #e0f2f7 100%);
+  width: 100%;
+  height: 100%;
 }
 .ai-training-container{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  max-width:100%;
-  padding:40px;
+  display: none; /* Hide training container for full-screen chat */
 }
 .ai-training-container h2{
   font-size:32px;
@@ -172,14 +167,13 @@ body{
   margin-bottom:15px;
 }
 
-/* Bot Chat Panel (always visible) */
+/* Bot Chat Panel (always visible - full screen for AI mode) */
 .bot-panel{
-  width:400px;
+  width:100%;
+  flex: 1;
   background:white;
-  border-left:2px solid #e0e0e0;
   display:flex;
   flex-direction:column;
-  box-shadow:-2px 0 10px rgba(0,0,0,0.1);
 }
 .panel-header{
   padding:16px 20px;
