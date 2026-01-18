@@ -75,45 +75,89 @@ let activeConnections = []; // Track active connections to persist them after re
 
 // Predefined nodes for Casual Bot mode (educational examples)
 const predefinedNodes = [
-  { id: 'start', label: 'Start point', icon: '🏠', class: 'node-start', x: 80, y: 300, type: 'start', message: 'Welcome to Casual Bot! 👋\n\nI can answer questions about AI concepts. Try asking me about:\n• What is an embedding?\n• What is chunking?\n• What is a vector?\n• How does AI learn?\n• What is RAG?', canAddChild: false },
+  { id: 'start', label: 'Start point', icon: '🏠', class: 'node-start', x: 80, y: 300, type: 'start', message: 'Welcome to BookEinstein! 👋\n\nHow can I help you today?', canAddChild: false },
   
-  // First level questions from Start
-  { id: 'q1', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 320, y: 40, type: 'response', question: 'what is an embedding', message: '', canAddChild: true },
-  { id: 'a1', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 560, y: 40, type: 'response', question: '', message: '🧮 An embedding is a way to convert text into numbers (vectors) that AI can understand. It\'s like translating words into a language computers can process!', canAddChild: false },
+  // Level 1 - Main Menu (3 options)
+  { id: 'q1', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 320, y: 100, type: 'response', question: 'what is machine learning', message: '', canAddChild: true },
+  { id: 'q2', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 320, y: 300, type: 'response', question: 'types of machine learning', message: '', canAddChild: true },
+  { id: 'q3', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 320, y: 500, type: 'response', question: 'contact us', message: '', canAddChild: true },
   
-  { id: 'q2', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 320, y: 160, type: 'response', question: 'what is chunking', message: '', canAddChild: true },
-  { id: 'a2', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 560, y: 160, type: 'response', question: '', message: '✂️ Chunking is breaking large text into smaller pieces. Like cutting a big document into paragraphs so AI can process it better!', canAddChild: false },
+  // Contact Us Response
+  { id: 'a_contact', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 560, y: 500, type: 'response', question: '', message: '📞 Contact Us:\n\n📱 Phone: +91 97694 31043\n📧 Email: smita@bookeinstein.com\n\n👤 Contact Person: Smita\n\nFeel free to reach out anytime!', canAddChild: false },
   
-  { id: 'q3', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 320, y: 280, type: 'response', question: 'what is a vector', message: '', canAddChild: true },
-  { id: 'a3', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 560, y: 280, type: 'response', question: '', message: '📊 A vector is a list of numbers that represents something in AI. It\'s like coordinates on a map - but for words and concepts!', canAddChild: false },
+  // What is Machine Learning - Answer + Follow-up questions
+  { id: 'a1', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 560, y: 100, type: 'response', question: '', message: '🤖 Machine Learning is a type of AI where computers learn from data without being explicitly programmed. They find patterns and make decisions based on examples!\n\nWant to learn more?', canAddChild: true },
   
-  { id: 'q4', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 320, y: 400, type: 'response', question: 'how does ai learn', message: '', canAddChild: true },
-  { id: 'a4', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 560, y: 400, type: 'response', question: '', message: '🎓 AI learns by finding patterns in data! It reads lots of examples and discovers connections - like how you learn from experience!', canAddChild: false },
+  { id: 'q1_1', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 800, y: 20, type: 'response', question: 'how does a machine learn', message: '', canAddChild: true },
+  { id: 'q1_2', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 800, y: 100, type: 'response', question: 'how does machine learning improve', message: '', canAddChild: true },
+  { id: 'q1_3', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 800, y: 180, type: 'response', question: 'does machine learning need data', message: '', canAddChild: true },
   
-  { id: 'q5', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 320, y: 520, type: 'response', question: 'what is rag', message: '', canAddChild: true },
-  { id: 'a5', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 560, y: 520, type: 'response', question: '', message: '🤖 RAG (Retrieval-Augmented Generation) is when AI searches through documents to find information before answering. It\'s like having a smart assistant that reads books before responding!', canAddChild: false },
+  { id: 'a1_1', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1040, y: 20, type: 'response', question: '', message: '🎓 A machine learns by analyzing lots of examples! It looks for patterns in data - like recognizing cats in photos after seeing thousands of cat pictures. The more examples it sees, the better it gets!', canAddChild: true },
+  { id: 'a1_2', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1040, y: 100, type: 'response', question: '', message: '📈 Machine Learning improves through:\n1. More training data\n2. Better algorithms\n3. Fine-tuning parameters\n4. Feedback from results\n\nIt\'s like practicing - the more you practice with good feedback, the better you become!', canAddChild: false },
+  { id: 'a1_3', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1040, y: 180, type: 'response', question: '', message: '📊 Yes! Data is essential for Machine Learning. Without data, ML can\'t learn patterns or make predictions. Quality and quantity of data directly impact how well the model performs!', canAddChild: false },
   
-  { id: 'fallback', label: 'Default Fallback', icon: 'ELSE', class: 'node-fallback node-example', x: 320, y: 640, type: 'fallback', message: 'I don\'t have an answer for that yet. Try asking about the topics I know!', canAddChild: true }
+  // After "How does a machine learn" - Show technical concepts
+  { id: 'q1_1_1', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 1280, y: -40, type: 'response', question: 'what is an embedding', message: '', canAddChild: true },
+  { id: 'q1_1_2', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 1280, y: 20, type: 'response', question: 'what is chunking', message: '', canAddChild: true },
+  { id: 'q1_1_3', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 1280, y: 80, type: 'response', question: 'what is a vector', message: '', canAddChild: true },
+  
+  { id: 'a1_1_1', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1520, y: -40, type: 'response', question: '', message: '🧮 An embedding is a way to convert text into numbers (vectors) that AI can understand. It\'s like translating words into a language computers can process!', canAddChild: false },
+  { id: 'a1_1_2', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1520, y: 20, type: 'response', question: '', message: '✂️ Chunking is breaking large text into smaller pieces. Like cutting a big document into paragraphs so AI can process it better!', canAddChild: false },
+  { id: 'a1_1_3', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1520, y: 80, type: 'response', question: '', message: '📊 A vector is a list of numbers that represents something in AI. It\'s like coordinates on a map - but for words and concepts!', canAddChild: false },
+  
+  // Types of Machine Learning - Answer + 3 types
+  { id: 'a2', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 560, y: 300, type: 'response', question: '', message: '📚 There are three main types of Machine Learning. Each type learns differently!\n\nWhich one would you like to learn about?', canAddChild: true },
+  
+  { id: 'q2_1', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 800, y: 240, type: 'response', question: 'what is supervised learning', message: '', canAddChild: true },
+  { id: 'q2_2', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 800, y: 320, type: 'response', question: 'what is unsupervised learning', message: '', canAddChild: true },
+  { id: 'q2_3', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 800, y: 400, type: 'response', question: 'what is reinforcement learning', message: '', canAddChild: true },
+  
+  { id: 'a2_1', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1040, y: 240, type: 'response', question: '', message: '👨‍🏫 Supervised Learning is like learning with a teacher! The machine is given labeled examples (input + correct answer) and learns to predict answers for new data. Example: Email spam detection!', canAddChild: false },
+  { id: 'a2_2', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1040, y: 320, type: 'response', question: '', message: '🔍 Unsupervised Learning is like exploring on your own! The machine finds hidden patterns in data without labeled answers. Example: Customer grouping in marketing!', canAddChild: false },
+  { id: 'a2_3', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1040, y: 400, type: 'response', question: '', message: '🎮 Reinforcement Learning is like training a pet! The machine learns by trial and error, getting rewards for good actions and penalties for bad ones. Example: Self-driving cars and game AI!', canAddChild: false },
+  
+  { id: 'fallback', label: 'Default Fallback', icon: 'ELSE', class: 'node-fallback node-example', x: 320, y: 700, type: 'fallback', message: 'I don\'t have an answer for that yet. Try asking about Machine Learning topics or contact us for more info!', canAddChild: true }
 ];
 
 // Predefined connections for Casual Bot
 const predefinedConnections = [
-  // From Start to all 5 first-level questions
-  { from: 'start', to: 'q1' },
-  { from: 'start', to: 'q2' },
-  { from: 'start', to: 'q3' },
-  { from: 'start', to: 'q4' },
-  { from: 'start', to: 'q5' },
+  // From Start to 3 main options
+  { from: 'start', to: 'q1' },  // What is ML
+  { from: 'start', to: 'q2' },  // Types of ML
+  { from: 'start', to: 'q3' },  // Contact Us
   { from: 'start', to: 'fallback' },
   
-  // Each question to its answer
-  { from: 'q1', to: 'a1' },
-  { from: 'q2', to: 'a2' },
-  { from: 'q3', to: 'a3' },
-  { from: 'q4', to: 'a4' },
-  { from: 'q5', to: 'a5' }
+  // Main questions to their answers
+  { from: 'q1', to: 'a1' },  // What is ML -> Answer
+  { from: 'q2', to: 'a2' },  // Types -> Answer
+  { from: 'q3', to: 'a_contact' },  // Contact Us -> Contact Info
   
-  // New nodes will be created dynamically after each answer
+  // From "What is ML" answer to 3 follow-ups
+  { from: 'a1', to: 'q1_1' },  // How does machine learn
+  { from: 'a1', to: 'q1_2' },  // How does ML improve
+  { from: 'a1', to: 'q1_3' },  // Does ML need data
+  
+  { from: 'q1_1', to: 'a1_1' },
+  { from: 'q1_2', to: 'a1_2' },
+  { from: 'q1_3', to: 'a1_3' },
+  
+  // From "How does machine learn" to technical concepts
+  { from: 'a1_1', to: 'q1_1_1' },  // What is embedding
+  { from: 'a1_1', to: 'q1_1_2' },  // What is chunking
+  { from: 'a1_1', to: 'q1_1_3' },  // What is vector
+  
+  { from: 'q1_1_1', to: 'a1_1_1' },
+  { from: 'q1_1_2', to: 'a1_1_2' },
+  { from: 'q1_1_3', to: 'a1_1_3' },
+  
+  // From "Types of ML" answer to 3 types
+  { from: 'a2', to: 'q2_1' },  // Supervised
+  { from: 'a2', to: 'q2_2' },  // Unsupervised
+  { from: 'a2', to: 'q2_3' },  // Reinforcement
+  
+  { from: 'q2_1', to: 'a2_1' },
+  { from: 'q2_2', to: 'a2_2' },
+  { from: 'q2_3', to: 'a2_3' }
 ];
 
 const nodes = [];
