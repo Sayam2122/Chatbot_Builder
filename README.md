@@ -2,6 +2,10 @@
 
 Welcome to Bot Flow Builder! A visual tool for children to build their own chatbots with AI-powered answers.
 
+## 🌐 Live Demo
+
+**Try it now:** [https://whack-a-mole-quiz.vercel.app/](https://whack-a-mole-quiz.vercel.app/)
+
 ## ✨ Features
 
 - **Visual Flow Builder**: Drag and drop nodes to create conversation flows
