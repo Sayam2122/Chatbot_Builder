@@ -157,6 +157,24 @@ body{
   background:linear-gradient(180deg, #f0f8ff 0%, #e0f2f7 100%);
   width: 100%;
   height: 100%;
+  gap: 0;
+}
+.ai-books-sidebar{
+  width: 220px;
+  background: white;
+  border-right: 2px solid #e0e0e0;
+  padding: 20px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.ai-books-sidebar h3 {
+  font-size: 16px;
+  margin: 0 0 15px 0;
+  color: #022c3a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
 }
 .ai-training-container{
   display: none; /* Hide training container for full-screen chat */
@@ -174,6 +192,7 @@ body{
   background:white;
   display:flex;
   flex-direction:column;
+  min-width: 350px; /* Minimum width when resizing */
 }
 .panel-header{
   padding:16px 20px;
@@ -260,6 +279,7 @@ body{
   background:linear-gradient(90deg,rgba(2,44,58,0.02) 1px,transparent 1px),
              linear-gradient(rgba(2,44,58,0.02) 1px,transparent 1px);
   background-size:40px 40px;
+  min-width: 300px; /* Minimum width when resizing */
 }
 .connections-layer{
   position:absolute;
@@ -268,6 +288,8 @@ body{
   height:3000px; /* Extra large canvas area */
   pointer-events:none;
   z-index:1;
+  transform-origin: 500px 500px; /* Match the offset position */
+  transition: transform 0.2s ease;
 }
 .nodes-layer{
   position:absolute;
@@ -275,6 +297,67 @@ body{
   width:3000px;  /* Extra large canvas area */
   height:3000px; /* Extra large canvas area */
   z-index:2;
+  transform-origin: 500px 500px; /* Match the offset position */
+  transition: transform 0.2s ease;
+}
+
+/* Zoom Controls */
+.zoom-controls {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10;
+}
+
+.zoom-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoom-btn:hover {
+  background: #f0f0f0;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.zoom-btn:active {
+  transform: scale(0.95);
+}
+
+/* Resize Handle */
+.resize-handle {
+  width: 12px; /* Wider for easier grabbing */
+  background: linear-gradient(90deg, transparent, #ccc, transparent);
+  cursor: ew-resize;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resize-handle:hover {
+  background: linear-gradient(90deg, transparent, #667eea, transparent);
+  width: 15px; /* Slightly wider on hover */
+}
+
+.resize-handle:active {
+  background: linear-gradient(90deg, transparent, #5568d3, transparent);
+  width: 15px;
 }
 
 /* Node Styles */
@@ -337,13 +420,11 @@ body{
   stroke:#999;
   stroke-width:2;
   fill:none;
-  marker-end:url(#arrowhead);
   transition:stroke 0.3s ease, stroke-width 0.3s ease;
 }
 .connection.active{
   stroke:#0099ff;
   stroke-width:3;
-  marker-end:url(#arrowhead-active);
 }
 
 /* Current position pointer (blinking blue dot) */

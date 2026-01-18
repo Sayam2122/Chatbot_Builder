@@ -28,12 +28,25 @@ let currentMode = null;
 let isCustomizeMode = false; // Track if user is in customize mode
 let questionCount = 0; // Track number of questions asked
 let customizeOffered = false; // Track if customize option has been offered
+let customNodesAdded = 0; // Track number of custom nodes created
+const MAX_CUSTOM_NODES = 4; // Maximum custom nodes allowed
 
 // AI mode tracking
 let aiQuestionCount = 0; // Track questions in AI mode
 let aiTrainingOffered = false; // Track if training offer shown
 let userHasTrained = false; // Track if user uploaded their own PDF
 let initialPDFs = []; // Store names of initially loaded PDFs
+
+// Load trained books from localStorage on startup
+const savedBooks = localStorage.getItem('trainedBooks');
+if(savedBooks) {
+  try {
+    initialPDFs = JSON.parse(savedBooks);
+    console.log(`📚 Loaded ${initialPDFs.length} trained books from storage`);
+  } catch(e) {
+    console.error('Error loading saved books:', e);
+  }
+}
 
 // Modal elements
 const editModal = document.getElementById('editModal');
@@ -66,8 +79,6 @@ ragSystem.load();
 
 // Node data
 let nodeIdCounter = 100;
-let customNodesAdded = 0; // Track custom nodes added
-const MAX_CUSTOM_NODES = 3; // Allow only 3 custom nodes
 
 // Track path history for back button
 let pathHistory = []; // Array to store node IDs in order of traversal
@@ -96,14 +107,14 @@ const predefinedNodes = [
   { id: 'a1_2', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1040, y: 100, type: 'response', question: '', message: '📈 Machine Learning improves through:\n1. More training data\n2. Better algorithms\n3. Fine-tuning parameters\n4. Feedback from results\n\nIt\'s like practicing - the more you practice with good feedback, the better you become!', canAddChild: false },
   { id: 'a1_3', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1040, y: 180, type: 'response', question: '', message: '📊 Yes! Data is essential for Machine Learning. Without data, ML can\'t learn patterns or make predictions. Quality and quantity of data directly impact how well the model performs!', canAddChild: false },
   
-  // After "How does a machine learn" - Show technical concepts
-  { id: 'q1_1_1', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 1280, y: -40, type: 'response', question: 'what is an embedding', message: '', canAddChild: true },
-  { id: 'q1_1_2', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 1280, y: 20, type: 'response', question: 'what is chunking', message: '', canAddChild: true },
-  { id: 'q1_1_3', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 1280, y: 80, type: 'response', question: 'what is a vector', message: '', canAddChild: true },
+  // After "How does a machine learn" - Show technical concepts (Fixed positions - no negative values)
+  { id: 'q1_1_1', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 1280, y: 0, type: 'response', question: 'what is an embedding', message: '', canAddChild: true },
+  { id: 'q1_1_2', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 1280, y: 60, type: 'response', question: 'what is chunking', message: '', canAddChild: true },
+  { id: 'q1_1_3', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 1280, y: 120, type: 'response', question: 'what is a vector', message: '', canAddChild: true },
   
-  { id: 'a1_1_1', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1520, y: -40, type: 'response', question: '', message: '🧮 An embedding is a way to convert text into numbers (vectors) that AI can understand. It\'s like translating words into a language computers can process!', canAddChild: false },
-  { id: 'a1_1_2', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1520, y: 20, type: 'response', question: '', message: '✂️ Chunking is breaking large text into smaller pieces. Like cutting a big document into paragraphs so AI can process it better!', canAddChild: false },
-  { id: 'a1_1_3', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1520, y: 80, type: 'response', question: '', message: '📊 A vector is a list of numbers that represents something in AI. It\'s like coordinates on a map - but for words and concepts!', canAddChild: false },
+  { id: 'a1_1_1', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1520, y: 0, type: 'response', question: '', message: '🧮 An embedding is a way to convert text into numbers (vectors) that AI can understand. It\'s like translating words into a language computers can process!', canAddChild: false },
+  { id: 'a1_1_2', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1520, y: 60, type: 'response', question: '', message: '✂️ Chunking is breaking large text into smaller pieces. Like cutting a big document into paragraphs so AI can process it better!', canAddChild: false },
+  { id: 'a1_1_3', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 1520, y: 120, type: 'response', question: '', message: '📊 A vector is a list of numbers that represents something in AI. It\'s like coordinates on a map - but for words and concepts!', canAddChild: false },
   
   // Types of Machine Learning - Answer + 3 types
   { id: 'a2', label: 'Bot Response', icon: '💬', class: 'node-response node-example', x: 560, y: 300, type: 'response', question: '', message: '📚 There are three main types of Machine Learning. Each type learns differently!\n\nWhich one would you like to learn about?', canAddChild: true },
@@ -198,6 +209,11 @@ function switchToCasualMode() {
   if(flowCanvas) flowCanvas.style.display = 'none';
   if(botPanel) botPanel.style.width = '100%';
   
+  // Initialize resize functionality after mode switch
+  setTimeout(() => {
+    initializeResizeHandlers();
+  }, 100);
+  
   // Start conversation automatically
   startConversation();
 }
@@ -280,11 +296,52 @@ async function loadInitialPDFs() {
       chatLogAI.innerHTML = '';
     }
     
+    // Update sidebar with trained books
+    updateTrainedBooksList();
+    
+    // Save the list of trained books to localStorage
+    localStorage.setItem('trainedBooks', JSON.stringify(initialPDFs));
+    
   } catch(error) {
     console.error('❌ Error in loadInitialPDFs:', error);
     if(chatLogAI) {
       chatLogAI.innerHTML = '';
     }
+  }
+}
+
+// Update the trained books list display in sidebar
+function updateTrainedBooksList() {
+  const booksList = document.getElementById('trainedBooksList');
+  if(!booksList) return;
+  
+  // Load from localStorage if initialPDFs is empty
+  if(initialPDFs.length === 0) {
+    const savedBooks = localStorage.getItem('trainedBooks');
+    if(savedBooks) {
+      try {
+        initialPDFs = JSON.parse(savedBooks);
+      } catch(e) {
+        console.error('Error loading saved books:', e);
+      }
+    }
+  }
+  
+  const allBooks = [...initialPDFs]; // Books loaded from books folder
+  
+  if(allBooks.length === 0) {
+    booksList.innerHTML = '<p style="margin:0;opacity:0.6;font-size:12px">No books loaded yet</p>';
+  } else {
+    booksList.innerHTML = allBooks.map(book => {
+      const bookName = book.replace('.pdf', '').replace(/_/g, ' ');
+      // Capitalize first letter of each word
+      const displayName = bookName.split(' ').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+      return `<div style="padding:8px 10px;background:#e8f4f8;border-left:3px solid #667eea;border-radius:4px;margin-bottom:8px;font-size:12px">
+        📖 ${displayName}
+      </div>`;
+    }).join('');
   }
 }
 
@@ -301,13 +358,21 @@ function switchToAIMode() {
   if(toggleCasual) toggleCasual.classList.remove('active');
   if(toggleAI) toggleAI.classList.add('active');
   
-  // Load initial PDFs first, then start conversation
-  loadInitialPDFs().then(() => {
+  // Update the trained books sidebar on switch
+  updateTrainedBooksList();
+  
+  // Load initial PDFs only if not already loaded
+  if(initialPDFs.length === 0) {
+    loadInitialPDFs().then(() => {
+      startConversationAI();
+    }).catch((error) => {
+      console.error('Error loading initial PDFs:', error);
+      startConversationAI(); // Show welcome message even if PDF loading fails
+    });
+  } else {
+    // Books already loaded, just start conversation
     startConversationAI();
-  }).catch((error) => {
-    console.error('Error loading initial PDFs:', error);
-    startConversationAI(); // Show welcome message even if PDF loading fails
-  });
+  }
 }
 
 function showCanvasView() {
@@ -316,11 +381,29 @@ function showCanvasView() {
   const botPanel = document.getElementById('botPanel');
   if(flowCanvas) {
     flowCanvas.style.display = 'block';
-    // Center the scroll position to allow scrolling in all directions
+    // Force immediate scroll to show start node
+    flowCanvas.scrollLeft = 200;
+    flowCanvas.scrollTop = 250;
+    
+    // Additional scrolls with delays to ensure it sticks
     setTimeout(() => {
-      flowCanvas.scrollLeft = 250;
+      flowCanvas.scrollLeft = 0;
       flowCanvas.scrollTop = 250;
+      console.log('Canvas scrolled to:', flowCanvas.scrollLeft, flowCanvas.scrollTop);
     }, 50);
+    
+    setTimeout(() => {
+      flowCanvas.scrollLeft = 0;
+      flowCanvas.scrollTop = 250;
+    }, 200);
+    
+    setTimeout(() => {
+      flowCanvas.scrollLeft = 0;
+      flowCanvas.scrollTop = 250;
+    }, 500);
+    
+    // Initialize resize handlers when canvas is shown
+    initializeResizeHandlers();
   }
   if(botPanel) botPanel.style.width = '400px';
 }
@@ -360,14 +443,20 @@ function initNodes() {
     div.style.left = `${node.x}px`;
     div.style.top = `${node.y}px`;
     
+    // Check if this node is a leaf node (no children)
+    const hasChildren = connections.some(conn => conn.from === node.id);
+    const isLeafNode = !hasChildren;
+    const canAddMoreNodes = customNodesAdded < MAX_CUSTOM_NODES;
+    
     div.innerHTML = `
       <span class="node-icon">${node.icon}</span>
       <span class="node-label">${node.label}</span>
       ${node.badge ? `<span class="node-badge">${node.badge}</span>` : ''}
-      ${(node.type === 'response' || node.type === 'fallback') && isCustomizeMode ? '<button class="add-node-btn" onclick="addChildNode(event, \'' + node.id + '\')">+</button>' : ''}
+      ${isCustomizeMode && isLeafNode && node.type === 'response' && canAddMoreNodes ? '<button class="add-node-btn" onclick="showNodeTypeModal(\'' + node.id + '\')">+</button>' : ''}
     `;
     
     div.addEventListener('mousedown', startDrag);
+    // Always allow double-click to edit in customize mode
     div.addEventListener('dblclick', (e) => {
       e.stopPropagation();
       openEditModal(node.id);
@@ -377,6 +466,15 @@ function initNodes() {
   });
   
   drawConnections();
+  
+  // Scroll to show start node after nodes are rendered
+  setTimeout(() => {
+    const flowCanvas = document.getElementById('flowCanvas');
+    if(flowCanvas && flowCanvas.style.display === 'block') {
+      flowCanvas.scrollLeft = 0;
+      flowCanvas.scrollTop = 200;
+    }
+  }, 100);
 }
 
 // Track current node during test conversation
@@ -417,30 +515,81 @@ function setActiveNode(nodeId){
   
   // Update the current position pointer - pass previousNodeId for path animation
   updateCurrentPointer(nodeId, previousNodeId);
+  
+  // Update quick question buttons based on current node
+  updateQuickButtons(nodeId);
+}
+
+// Update quick question buttons based on current node
+function updateQuickButtons(nodeId) {
+  const quickQuestions = document.getElementById('quickQuestions');
+  if(!quickQuestions) return;
+  
+  // Get children of current node
+  const childrenConns = connections.filter(c => c.from === nodeId);
+  const questionChildren = childrenConns
+    .map(c => nodes.find(n => n.id === c.to))
+    .filter(n => n && n.question);
+  
+  // Build buttons HTML
+  let buttonsHTML = '<p style="margin:0 0 10px 0;font-size:13px;color:#666;font-weight:600;">💡 Quick Questions:</p>';
+  
+  // Add question buttons
+  questionChildren.forEach(child => {
+    const icon = child.question.toLowerCase().includes('machine learning') ? '🤖' : 
+                 child.question.toLowerCase().includes('types') ? '📚' :
+                 child.question.toLowerCase().includes('contact') ? '📞' :
+                 child.question.toLowerCase().includes('supervised') ? '👨‍🏫' :
+                 child.question.toLowerCase().includes('unsupervised') ? '🔍' :
+                 child.question.toLowerCase().includes('reinforcement') ? '🎮' :
+                 child.question.toLowerCase().includes('how does') ? '🎓' :
+                 child.question.toLowerCase().includes('improve') ? '📈' :
+                 child.question.toLowerCase().includes('data') ? '📊' :
+                 child.question.toLowerCase().includes('embedding') ? '🧮' :
+                 child.question.toLowerCase().includes('chunking') ? '✂️' :
+                 child.question.toLowerCase().includes('vector') ? '📊' : '❓';
+    
+    const displayQuestion = child.question.charAt(0).toUpperCase() + child.question.slice(1);
+    buttonsHTML += `<button class="quick-btn" data-question="${child.question}">${icon} ${displayQuestion}?</button>`;
+  });
+  
+  // Add Back button if we have enough history to go back 2 steps (to reach previous bot response)
+  if(nodeId !== 'start' && pathHistory.length > 2) {
+    buttonsHTML += '<button class="quick-btn" data-action="back" style="background:#6c757d">⬅️ Back</button>';
+  }
+  
+  // Always add Main Menu button if not at start
+  if(nodeId !== 'start') {
+    buttonsHTML += '<button class="quick-btn main-menu-quick" data-action="mainmenu">🏠 Main Menu</button>';
+  }
+  
+  quickQuestions.innerHTML = buttonsHTML;
 }
 
 function startConversation(){
   // clear chat log and show start message
   chatLog.innerHTML = '';
-  pathHistory = []; // Reset path history
+  pathHistory = ['start']; // Reset path history with start
   activeConnections = []; // Reset active connections - CLEAR ALL BLUE LINES
   currentNodeId = 'start';
   previousNodeId = null;
-  
-  // Hide back button
-  const backBtn = document.getElementById('backBtn');
-  if(backBtn) backBtn.style.display = 'none';
-  
-  // Hide main menu button
-  const mainMenuBtn = document.getElementById('mainMenuBtn');
-  if(mainMenuBtn) mainMenuBtn.style.display = 'none';
   
   // Remove pointer completely
   const existingPointer = document.getElementById('currentPointer');
   if(existingPointer) existingPointer.remove();
   
+  // Scroll canvas to show start node properly
+  const canvas = document.getElementById('flowCanvas');
+  if(canvas && canvas.style.display === 'block') {
+    // Scroll to show start node (y=300 with 500px offset = scrollTop 250)
+    setTimeout(() => {
+      canvas.scrollLeft = 0;
+      canvas.scrollTop = 250;
+    }, 100);
+  }
+  
   // Redraw connections to clear blue lines
-  // drawConnections();
+  drawConnections();
   
   const startNode = nodes.find(n=>n.id==='start');
   if(startNode && startNode.message) appendMessage('bot', startNode.message);
@@ -535,55 +684,58 @@ function stopDrag() {
 }
 
 // Draw connections between nodes
+// Draw connection lines between nodes
 function drawConnections() {
-  connectionsSvg.innerHTML = `
-    <defs>
-      <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-        <polygon points="0 0, 10 3, 0 6" fill="#999" />
-      </marker>
-      <marker id="arrowhead-active" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-        <polygon points="0 0, 10 3, 0 6" fill="#0099ff" />
-      </marker>
-    </defs>
-  `;
+  // Clear existing connections
+  connectionsSvg.innerHTML = '';
   
+  // Draw each connection
   connections.forEach(conn => {
+    // Find the node objects
     const fromNode = nodes.find(n => n.id === conn.from);
     const toNode = nodes.find(n => n.id === conn.to);
     if (!fromNode || !toNode) return;
     
+    // Get the DOM elements
     const fromEl = document.getElementById(`node-${conn.from}`);
     const toEl = document.getElementById(`node-${conn.to}`);
     if (!fromEl || !toEl) return;
     
-    const x1 = fromNode.x + fromEl.offsetWidth / 2;
-    const y1 = fromNode.y + fromEl.offsetHeight / 2;
-    const x2 = toNode.x + toEl.offsetWidth / 2;
-    const y2 = toNode.y + toEl.offsetHeight / 2;
+    // Calculate center points using node data (x, y) plus half of rendered dimensions
+    // Node height is approximately 48px (padding 12px top+bottom + content ~24px)
+    const nodeHeight = 48;
+    const centerX1 = fromNode.x + (fromEl.clientWidth / 2);
+    const centerY1 = fromNode.y + (nodeHeight / 2); // Fixed: 24px from top
+    const centerX2 = toNode.x + (toEl.clientWidth / 2);
+    const centerY2 = toNode.y + (nodeHeight / 2); // Fixed: 24px from top
     
-    // Curved path
+    // Create curved path between centers
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const controlOffset = Math.abs(dx) * 0.5;
     
-    const d = `M ${x1} ${y1} C ${x1 + controlOffset} ${y1}, ${x2 - controlOffset} ${y2}, ${x2} ${y2}`;
-    path.setAttribute('d', d);
+    // Calculate curve control points
+    const deltaX = centerX2 - centerX1;
+    const curveOffset = Math.abs(deltaX) * 0.5;
+    
+    // SVG path: Move to start, Curve to end
+    const pathData = `M ${centerX1} ${centerY1} C ${centerX1 + curveOffset} ${centerY1}, ${centerX2 - curveOffset} ${centerY2}, ${centerX2} ${centerY2}`;
+    
+    path.setAttribute('d', pathData);
     path.setAttribute('class', 'connection');
     path.setAttribute('data-from', conn.from);
     path.setAttribute('data-to', conn.to);
     
-    // Re-apply active class if this connection was active before redraw
+    // Check if this connection should be highlighted (blue)
     const isActive = activeConnections.some(ac => ac.from === conn.from && ac.to === conn.to);
-    if(isActive) {
+    if (isActive) {
       path.classList.add('active');
     }
     
+    // Add path to SVG
     connectionsSvg.appendChild(path);
   });
   
-  // Re-add the current pointer if it exists (to keep it on top)
-  if(currentNodeId) {
+  // Restore the current pointer on top of connections
+  if (currentNodeId) {
     updateCurrentPointer(currentNodeId);
   }
 }
@@ -643,15 +795,16 @@ function updateCurrentPointer(nodeId, fromNodeId = null) {
   
   // Calculate final position based on node type
   let targetX, targetY;
+  const nodeHeight = 48; // Fixed node height
   
   if(nodeId === 'start') {
     // For Start node, position at the END (right side) because traversal goes FROM start
-    targetX = node.x + nodeEl.offsetWidth + 15; // 15px after the node
-    targetY = node.y + (nodeEl.offsetHeight / 2);
+    targetX = node.x + nodeEl.clientWidth + 15; // 15px after the node
+    targetY = node.y + (nodeHeight / 2); // 24px from top (vertical center)
   } else {
     // For other nodes, position BEFORE (left side) at the end of incoming blue line
     targetX = node.x - 15; // 15px before the node
-    targetY = node.y + (nodeEl.offsetHeight / 2);
+    targetY = node.y + (nodeHeight / 2); // 24px from top (vertical center)
   }
   
   if(existingPointer && fromNodeId && fromNodeId !== nodeId) {
@@ -853,64 +1006,33 @@ function createNewQuestionNodes(fromAnswerId) {
 const resetChatBtn = document.getElementById('resetChat');
 if(resetChatBtn){
   resetChatBtn.addEventListener('click', ()=>{
-    // Clear conversation history in RAG system
+    // Complete reset - clear conversation history and customization
     ragSystem.clearHistory();
+    
+    // Reset all customize mode variables
+    isCustomizeMode = false;
+    customizeOffered = false;
+    customNodesAdded = 0;
+    questionCount = 0;
+    
+    // Hide customize button
+    const customizeBtn = document.getElementById('customizeNodesBtn');
+    if(customizeBtn) {
+      customizeBtn.style.display = 'none';
+    }
+    
+    // Reload predefined nodes (remove any custom nodes)
+    nodes.length = 0;
+    nodes.push(...predefinedNodes);
+    connections.length = 0;
+    connections.push(...predefinedConnections);
+    
+    // Reinitialize and start fresh
+    initNodes();
     startConversation();
   });
 }
-
-// Back button (Casual mode)
-const backBtn = document.getElementById('backBtn');
-if(backBtn){
-  backBtn.addEventListener('click', ()=>{
-    // Go back in the path history
-    if(pathHistory.length > 1) {
-      // Remove current node from history
-      pathHistory.pop();
-      
-      // Get the previous node
-      const previousNode = pathHistory[pathHistory.length - 1];
-      
-      // Remove the blue line between previous and current
-      if(pathHistory.length >= 2) {
-        const fromNode = pathHistory[pathHistory.length - 2];
-        const toNode = currentNodeId;
-        removeConnectionHighlight(fromNode, toNode);
-      }
-      
-      // Update current node without adding to history again
-      currentNodeId = previousNode;
-      previousNodeId = pathHistory.length >= 2 ? pathHistory[pathHistory.length - 2] : null;
-      
-      // Update active node styling (blue border)
-      document.querySelectorAll('.node.active').forEach(el=>el.classList.remove('active'));
-      const el = document.getElementById('node-' + currentNodeId);
-      if(el) el.classList.add('active');
-      
-      // Update pointer position - NO ANIMATION (just jump directly)
-      updateCurrentPointer(currentNodeId, null);
-      
-      // Hide back button if we're at the start
-      if(pathHistory.length <= 1) {
-        backBtn.style.display = 'none';
-      }
-      
-      // Hide main menu button if we're at the start
-      const mainMenuBtn = document.getElementById('mainMenuBtn');
-      if(mainMenuBtn && currentNodeId === 'start') {
-        mainMenuBtn.style.display = 'none';
-      }
-      
-      // Add message to chat
-      const node = nodes.find(n => n.id === currentNodeId);
-      if(node && node.message) {
-        appendMessage('bot', '⬅️ Going back...\n\n' + node.message);
-      }
-    }
-  });
-}
-
-// Main Menu button (Casual mode)
+// Main Menu button (Casual mode) - Now handled in quick buttons with data-action="mainmenu"
 const mainMenuBtn = document.getElementById('mainMenuBtn');
 if(mainMenuBtn){
   mainMenuBtn.addEventListener('click', ()=>{
@@ -931,6 +1053,9 @@ if(mainMenuBtn){
     
     // Redraw connections (will keep blue lines from activeConnections)
     drawConnections();
+    
+    // Update quick buttons for start menu
+    updateQuickButtons('start');
     
     // Hide back and main menu buttons
     const backBtn = document.getElementById('backBtn');
@@ -955,6 +1080,34 @@ if(resetChatBtnAI){
   });
 }
 
+// Clear Knowledge button in AI mode
+const clearKnowledgeBtn = document.getElementById('clearKnowledgeBtn');
+if(clearKnowledgeBtn){
+  clearKnowledgeBtn.addEventListener('click', ()=>{
+    if(confirm('⚠️ Are you sure you want to clear all trained knowledge?\n\nThis will remove:\n• All trained books and data\n• Conversation history\n\nThis action cannot be undone!')){
+      // Clear RAG system
+      ragSystem.clear();
+      ragSystem.clearHistory();
+      
+      // Clear backward compatibility variables
+      knowledgeBase = '';
+      knowledgeChunks = [];
+      knowledgeEmbeddings = [];
+      
+      // Clear trained books list
+      initialPDFs = [];
+      localStorage.removeItem('trainedBooks');
+      updateTrainedBooksList();
+      
+      // Clear chat
+      if(chatLogAI) chatLogAI.innerHTML = '';
+      
+      // Show success message
+      appendMessageAI('bot', '✅ All knowledge cleared successfully!\n\nYou can now train me on new documents by clicking "📚 Start Training".');
+    }
+  });
+}
+
 // Customize Nodes button
 const customizeNodesBtn = document.getElementById('customizeNodesBtn');
 if(customizeNodesBtn){
@@ -964,10 +1117,92 @@ if(customizeNodesBtn){
       return;
     }
     
-    // Prompt user to add custom nodes
-    appendMessage('bot', `🎨 You can add ${MAX_CUSTOM_NODES - customNodesAdded} more custom node(s)!\n\nTell me:\n1. What question should the node ask?\n2. What answer should it give?\n\nExample: "Question: What is machine learning? Answer: Machine learning is..."`);
+    // Enter customize mode - show + buttons on nodes
     isCustomizeMode = true;
+    appendMessage('bot', `🎨 Customize Mode Activated!\n\nYou can add up to ${MAX_CUSTOM_NODES - customNodesAdded} more custom node(s).\n\n✨ What you can do:\n• Click [+] buttons on end nodes to add new nodes\n• Double-click any node to edit its question/answer\n\nStart customizing your bot!`);
+    
+    // Show + buttons on nodes that can have children
+    showAddNodeButtons();
   });
+}
+
+// Show + buttons on nodes in customize mode
+function showAddNodeButtons() {
+  // Refresh nodes to show + buttons
+  initNodes();
+}
+
+// Show modal to select node type (User Input or Bot Response)
+window.showNodeTypeModal = function(parentId) {
+  if(customNodesAdded >= MAX_CUSTOM_NODES) {
+    appendMessage('bot', `⚠️ You've reached the limit of ${MAX_CUSTOM_NODES} custom nodes!`);
+    return;
+  }
+  
+  const nodeType = prompt('Select node type:\n\n1. Type "input" for User Input node\n2. Type "response" for Bot Response node');
+  
+  if(!nodeType) return;
+  
+  const normalizedType = nodeType.toLowerCase().trim();
+  
+  if(normalizedType === 'input' || normalizedType === '1') {
+    // Create user input node
+    const question = prompt('Enter the question/input text:');
+    if(!question) return;
+    
+    addCustomNode(parentId, 'input', question, '');
+  } else if(normalizedType === 'response' || normalizedType === '2') {
+    // Create bot response node
+    const message = prompt('Enter the bot response message:');
+    if(!message) return;
+    
+    addCustomNode(parentId, 'response', '', message);
+  } else {
+    alert('Invalid selection. Please type "input" or "response"');
+  }
+};
+
+// Add custom node to the canvas
+function addCustomNode(parentId, nodeType, question, message) {
+  const parentNode = nodes.find(n => n.id === parentId);
+  if(!parentNode) return;
+  
+  nodeIdCounter++;
+  const newId = `custom_${nodeIdCounter}`;
+  
+  // Calculate position (to the right and slightly below parent)
+  const newX = parentNode.x + 240;
+  const newY = parentNode.y + (customNodesAdded * 80);
+  
+  const newNode = {
+    id: newId,
+    label: nodeType === 'input' ? 'User Input' : 'Bot Response',
+    icon: nodeType === 'input' ? '❓' : '💬',
+    class: 'node-response',
+    x: newX,
+    y: newY,
+    type: 'response',
+    question: question,
+    message: message,
+    canAddChild: true
+  };
+  
+  nodes.push(newNode);
+  connections.push({ from: parentId, to: newId });
+  
+  customNodesAdded++;
+  
+  // Refresh the canvas
+  initNodes();
+  
+  appendMessage('bot', `✅ Custom node added! (${customNodesAdded}/${MAX_CUSTOM_NODES})\n\n${customNodesAdded < MAX_CUSTOM_NODES ? 'You can add ' + (MAX_CUSTOM_NODES - customNodesAdded) + ' more node(s).' : 'You\'ve reached the maximum! But you can still double-click any node to edit it.'}`);
+  
+  if(customNodesAdded >= MAX_CUSTOM_NODES) {
+    // Don't exit customize mode, just hide + buttons
+    // User can still double-click to edit
+    initNodes(); // Refresh to hide + buttons (they won't show because isLeafNode check will fail or we're at max)
+    appendMessage('bot', '💡 Tip: You can continue editing nodes by double-clicking them!');
+  }
 }
 
 // Chat functionality
@@ -1290,12 +1525,17 @@ async function sendMessage() {
           }, 1000);
         }
         
-        // Show customize button after 3 questions
-        if(currentMode === 'casual' && questionCount >= 3) {
+        // Show customize button and message after 5-6 questions
+        if(currentMode === 'casual' && questionCount >= 5 && !customizeOffered) {
+          customizeOffered = true;
           const customizeBtn = document.getElementById('customizeNodesBtn');
           if(customizeBtn) {
             customizeBtn.style.display = 'inline-block';
           }
+          // Show customize offer message
+          setTimeout(() => {
+            appendMessage('bot', '🎨 Great questions! Did you know you can customize this bot by adding your own nodes?\n\nClick the "🎨 Customize Nodes" button at the top right to add up to 4 custom question-answer pairs!');
+          }, 500);
         }
         
         return;
@@ -1425,25 +1665,89 @@ const quickQuestions = document.getElementById('quickQuestions');
 if(quickQuestions) {
   quickQuestions.addEventListener('click', (e) => {
     if(e.target.classList.contains('quick-btn')) {
-      // Check if it's the main menu button
+      // Check if it's an action button
       const action = e.target.getAttribute('data-action');
+      
       if(action === 'mainmenu') {
         // Go back to start
-        const mainMenuBtn = document.getElementById('mainMenuBtn');
-        if(mainMenuBtn) {
-          mainMenuBtn.click();
+        pathHistory = ['start'];
+        activeConnections = [];
+        currentNodeId = 'start';
+        previousNodeId = null;
+        
+        // Clear all connection highlights
+        document.querySelectorAll('.connection-line').forEach(line => {
+          line.classList.remove('active');
+        });
+        
+        // Update active node styling
+        document.querySelectorAll('.node.active').forEach(el=>el.classList.remove('active'));
+        const el = document.getElementById('node-start');
+        if(el) el.classList.add('active');
+        
+        // Update pointer
+        updateCurrentPointer('start', null);
+        
+        // Update quick buttons
+        updateQuickButtons('start');
+        
+        // Add message to chat
+        const startNode = nodes.find(n => n.id === 'start');
+        if(startNode && startNode.message) {
+          appendMessage('bot', '🏠 Back to Main Menu\n\n' + startNode.message);
         }
         return;
       }
       
+      if(action === 'back') {
+        // Go back TWO steps in path history to skip user input and reach bot response
+        if(pathHistory.length > 2) {
+          // Remove current node from history
+          pathHistory.pop();
+          
+          // Remove the user input node too (go back 2 steps)
+          pathHistory.pop();
+          
+          // Get the previous bot response node
+          const previousNode = pathHistory[pathHistory.length - 1];
+          
+          // Remove blue lines for both steps
+          if(pathHistory.length >= 1) {
+            // Remove connection to current node
+            const toNode = currentNodeId;
+            removeConnectionHighlight(previousNode, toNode);
+          }
+          
+          // Update current node without adding to history again
+          currentNodeId = previousNode;
+          previousNodeId = pathHistory.length >= 2 ? pathHistory[pathHistory.length - 2] : null;
+          
+          // Update active node styling (blue border)
+          document.querySelectorAll('.node.active').forEach(el=>el.classList.remove('active'));
+          const el = document.getElementById('node-' + currentNodeId);
+          if(el) el.classList.add('active');
+          
+          // Update pointer position
+          updateCurrentPointer(currentNodeId, null);
+          
+          // Update quick buttons for the node we're going back to
+          updateQuickButtons(currentNodeId);
+          
+          // Add message to chat
+          const node = nodes.find(n => n.id === currentNodeId);
+          if(node && node.message) {
+            appendMessage('bot', '⬅️ Going back...\n\n' + node.message);
+          }
+        }
+        return;
+      }
+      
+      // Regular question button
       const question = e.target.getAttribute('data-question');
       if(question) {
         // Set the question in input and send it
         userMessage.value = question;
         sendMessage();
-        
-        // Keep buttons visible - don't remove them
-        // User can click any question multiple times
       }
     }
   });
@@ -2152,6 +2456,14 @@ document.getElementById('nextToStorage').addEventListener('click', () => {
 
 // Finish button: Close modal
 document.getElementById('finishTraining').addEventListener('click', () => {
+  // Add uploaded file to the trained books list
+  if(trainingData.fileName && !initialPDFs.includes(trainingData.fileName)) {
+    initialPDFs.push(trainingData.fileName);
+    // Save to localStorage
+    localStorage.setItem('trainedBooks', JSON.stringify(initialPDFs));
+    updateTrainedBooksList(); // Update the sidebar display
+  }
+  
   // Close modal
   if(knowledgeModal) knowledgeModal.style.display = 'none';
   
@@ -2163,7 +2475,7 @@ document.getElementById('finishTraining').addEventListener('click', () => {
   // Show success message in chat
   if(currentMode === 'ai' && chatLogAI) {
     const totalKB = (ragSystem.knowledgeBase.length / 1024).toFixed(2);
-    appendMessageAI('bot', `✅ Training complete! I now have ${totalKB}KB of knowledge.\n\nYou can ask me questions, or train me on more documents by clicking "Start Training" again!`);
+    appendMessageAI('bot', `✅ Training complete! I now have ${totalKB}KB of knowledge from "${trainingData.fileName}".\n\nYou can ask me questions, or train me on more documents by clicking "Start Training" again!`);
   }
 });
 
@@ -2178,6 +2490,11 @@ clearKnowledge.addEventListener('click', () => {
     knowledgeText.value = '';
     knowledgeChunks = [];
     knowledgeEmbeddings = [];
+    
+    // Clear trained books list
+    initialPDFs = [];
+    localStorage.removeItem('trainedBooks'); // Remove from storage
+    updateTrainedBooksList(); // Update sidebar to show "No books loaded yet"
     
     // Reset display
     const progressDiv = document.getElementById('trainingProgress');
@@ -2295,3 +2612,163 @@ if (ragSystem.provider && apiOption.value === 'own') {
 
 // Initialize on load - This will configure the RAG system with BookEinstein or user's key
 updateAPIConfig();
+
+// ==========================================
+// RESIZABLE PANELS FUNCTIONALITY
+// ==========================================
+
+let isResizing = false;
+let startX = 0;
+let startCanvasWidth = 0;
+let resizeInitialized = false;
+
+function initializeResizeHandlers() {
+  if (resizeInitialized) return; // Prevent multiple initializations
+  
+  const resizeHandle = document.getElementById('resizeHandle');
+  const flowCanvas = document.getElementById('flowCanvas');
+  const botPanel = document.getElementById('botPanel');
+  
+  if (!resizeHandle || !flowCanvas || !botPanel || !casualBotSection) {
+    console.log('Resize elements not ready yet');
+    return;
+  }
+  
+  // Load saved canvas width from localStorage
+  const savedCanvasWidth = localStorage.getItem('canvasWidth');
+  if (savedCanvasWidth) {
+    flowCanvas.style.flex = 'none';
+    flowCanvas.style.width = savedCanvasWidth + 'px';
+  }
+  
+  resizeHandle.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    startX = e.clientX;
+    startCanvasWidth = flowCanvas.offsetWidth;
+    
+    console.log('Resize started - Current width:', startCanvasWidth);
+    
+    // Prevent text selection during resize
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'ew-resize';
+    
+    e.preventDefault();
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+    
+    e.preventDefault(); // Prevent any default behavior
+    
+    const deltaX = e.clientX - startX;
+    const newWidth = startCanvasWidth + deltaX;
+    
+    // Get current section width
+    const sectionWidth = casualBotSection ? casualBotSection.offsetWidth : window.innerWidth;
+    
+    // Enforce minimum widths
+    const minCanvasWidth = 300;
+    const minPanelWidth = 350;
+    const maxCanvasWidth = sectionWidth - minPanelWidth - 12; // 12px for wider handle
+    
+    console.log('Resizing:', {deltaX, newWidth, minCanvasWidth, maxCanvasWidth});
+    
+    if (newWidth >= minCanvasWidth && newWidth <= maxCanvasWidth) {
+      flowCanvas.style.flex = 'none';
+      flowCanvas.style.width = newWidth + 'px';
+      
+      // Save to localStorage
+      localStorage.setItem('canvasWidth', newWidth);
+    }
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    }
+  });
+  
+  resizeInitialized = true;
+  console.log('Resize handlers initialized');
+}
+
+// ==========================================
+// ZOOM FUNCTIONALITY
+// ==========================================
+
+const zoomInBtn = document.getElementById('zoomInBtn');
+const zoomOutBtn = document.getElementById('zoomOutBtn');
+const zoomResetBtn = document.getElementById('zoomResetBtn');
+
+let zoomLevel = 1;
+const zoomStep = 0.02; // Reduced to 0.02 for smoother, less sensitive zoom
+const minZoom = 0.5;
+const maxZoom = 1.5;
+
+// Load saved zoom level
+const savedZoom = localStorage.getItem('canvasZoom');
+if (savedZoom) {
+  zoomLevel = parseFloat(savedZoom);
+  applyZoom();
+}
+
+function applyZoom() {
+  if (connectionsSvg && nodesLayer) {
+    connectionsSvg.style.transform = `scale(${zoomLevel})`;
+    nodesLayer.style.transform = `scale(${zoomLevel})`;
+    
+    // Save to localStorage
+    localStorage.setItem('canvasZoom', zoomLevel);
+  }
+}
+
+if (zoomInBtn) {
+  zoomInBtn.addEventListener('click', () => {
+    if (zoomLevel < maxZoom) {
+      zoomLevel = Math.min(zoomLevel + zoomStep, maxZoom);
+      applyZoom();
+    }
+  });
+}
+
+if (zoomOutBtn) {
+  zoomOutBtn.addEventListener('click', () => {
+    if (zoomLevel > minZoom) {
+      zoomLevel = Math.max(zoomLevel - zoomStep, minZoom);
+      applyZoom();
+    }
+  });
+}
+
+if (zoomResetBtn) {
+  zoomResetBtn.addEventListener('click', () => {
+    zoomLevel = 1;
+    applyZoom();
+  });
+}
+
+// Mouse wheel zoom (with Ctrl key)
+if (flowCanvas) {
+  flowCanvas.addEventListener('wheel', (e) => {
+    // Only zoom when Ctrl key is pressed
+    if (e.ctrlKey) {
+      e.preventDefault();
+      
+      if (e.deltaY < 0) {
+        // Zoom in
+        if (zoomLevel < maxZoom) {
+          zoomLevel = Math.min(zoomLevel + zoomStep, maxZoom);
+          applyZoom();
+        }
+      } else {
+        // Zoom out
+        if (zoomLevel > minZoom) {
+          zoomLevel = Math.max(zoomLevel - zoomStep, minZoom);
+          applyZoom();
+        }
+      }
+    }
+  }, { passive: false });
+}

@@ -51,17 +51,27 @@
     <!-- Casual Bot Section (hidden by default) -->
     <section class="bot-section casual-bot-section" id="casualBotSection" style="display:none">
       <div class="flow-canvas" id="flowCanvas">
+        <!-- Zoom Controls -->
+        <div class="zoom-controls">
+          <button id="zoomInBtn" class="zoom-btn" title="Zoom In">➕</button>
+          <button id="zoomResetBtn" class="zoom-btn" title="Reset Zoom">⊙</button>
+          <button id="zoomOutBtn" class="zoom-btn" title="Zoom Out">➖</button>
+        </div>
+        
         <svg id="connectionsSvg" class="connections-layer"></svg>
         <div class="nodes-layer" id="nodesLayer"></div>
       </div>
+      
+      <!-- Resize Handle -->
+      <div class="resize-handle" id="resizeHandle"></div>
       
       <!-- Bot Chat Panel (always visible in Casual mode) -->
       <div class="bot-panel" id="botPanel">
         <div class="panel-header">
           <h2>🎯 Chat with Flow Bot</h2>
           <div style="display:flex;gap:8px;">
-            <button id="customizeNodesBtn" class="customize-btn" style="display:none;">🎨 Customize Nodes</button>
-            <button id="mainMenuBtn" class="main-menu-btn" style="display:none;">🏠 Main Menu</button>
+            <button id="mainMenuBtn" class="main-menu-btn" style="display:none;">� Main Menu</button>
+            <button id="customizeNodesBtn" class="customize-btn" style="display:none;">� Customize Nodes</button>
             <button id="resetChat" class="reset-btn">🔄 Reset</button>
           </div>
         </div>
@@ -88,16 +98,23 @@
 
     <!-- AI Bot Section (hidden by default) -->
     <section class="bot-section ai-bot-section" id="aiBotSection" style="display:none">
-      <div class="ai-training-container">
-        <!-- Training container hidden - button moved to chat header -->
+      <!-- Left sidebar showing trained books -->
+      <div class="ai-books-sidebar" id="aiBooksSidebar">
+        <h3 style="font-size:16px;margin:0 0 15px 0;color:#022c3a;display:flex;align-items:center;gap:8px">
+          📚 <span>Trained Books</span>
+        </h3>
+        <div id="trainedBooksList" style="font-size:13px;color:#555">
+          <p style="margin:0;opacity:0.6">No books loaded yet</p>
+        </div>
       </div>
       
       <!-- Bot Chat Panel (always visible in AI mode) -->
-      <div class="bot-panel" id="botPanelAI">
+      <div class="bot-panel" id="botPanelAI" style="flex:1">
         <div class="panel-header">
           <h2>🤖 Chat with AI Learn Bot</h2>
           <div>
             <button id="openTrainingBtn" class="reset-btn" style="margin-right:8px">📚 Start Training</button>
+            <button id="clearKnowledgeBtn" class="reset-btn" style="margin-right:8px;background:#e74c3c">🗑️ Clear Knowledge</button>
             <button id="resetChatAI" class="reset-btn">🔄 Reset</button>
           </div>
         </div>
