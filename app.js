@@ -75,7 +75,7 @@ let activeConnections = []; // Track active connections to persist them after re
 
 // Predefined nodes for Casual Bot mode (educational examples)
 const predefinedNodes = [
-  { id: 'start', label: 'Start point', icon: '🏠', class: 'node-start', x: 80, y: 300, type: 'start', message: 'Welcome to BookEinstein! 👋\n\nHow can I help you today?', canAddChild: false },
+  { id: 'start', label: 'Start point', icon: '🏠', class: 'node-start', x: 80, y: 300, type: 'start', message: 'Welcome to BookEinstein! 👋\n\nHow can I help you today?\n\n💡 You can ask me about:\n• What is Machine Learning?\n• Types of Machine Learning\n• Contact Us', canAddChild: false },
   
   // Level 1 - Main Menu (3 options)
   { id: 'q1', label: 'User Input', icon: '❓', class: 'node-response node-example', x: 320, y: 100, type: 'response', question: 'what is machine learning', message: '', canAddChild: true },
@@ -1229,11 +1229,26 @@ async function sendMessage() {
       const child = nodes.find(n => n.id === conn.to);
       if(child && child.question){
         // Normalize both texts: remove punctuation, lowercase, trim
-        const q = child.question.toLowerCase().trim().replace(/[?!.]/g, '');
-        const userText = text.toLowerCase().trim().replace(/[?!.]/g, '');
+        const q = child.question.toLowerCase().trim().replace(/[?!.,]/g, '');
+        const userText = text.toLowerCase().trim().replace(/[?!.,]/g, '');
+        
+        // Split into words for better matching
+        const qWords = q.split(/\s+/);
+        const userWords = userText.split(/\s+/);
         
         // Check for match with flexible matching
-        if(userText.includes(q) || q.includes(userText) || userText === q){
+        // 1. Exact match
+        // 2. User text contains all words from question
+        // 3. Question contains all words from user text
+        // 4. Significant word overlap (70% or more)
+        
+        const overlap = qWords.filter(word => userWords.includes(word)).length;
+        const overlapPercent = overlap / Math.max(qWords.length, userWords.length);
+        
+        if(userText === q || 
+           userText.includes(q) || 
+           q.includes(userText) ||
+           overlapPercent >= 0.7){
           matched = child;
           break;
         }
