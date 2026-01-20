@@ -4,7 +4,7 @@ Welcome to Bot Flow Builder! A visual tool for children to build their own chatb
 
 ## 🌐 Live Demo
 
-**Try it now:** [https://whack-a-mole-quiz.vercel.app/](https://whack-a-mole-quiz.vercel.app/)
+**Try it now:** [https://chatbot-builder-delta.vercel.app/](https://chatbot-builder-delta.vercel.app/)
 
 ## ✨ Features
 
