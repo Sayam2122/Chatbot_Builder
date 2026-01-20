@@ -818,10 +818,14 @@ body{
   
   /* Mobile UI Fixes */
   body {
-    overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: auto; /* Allow pull-to-refresh */
+  }
+  
+  /* Allow horizontal scroll in specific containers */
+  html {
+    overflow-x: hidden; /* Prevent page-level horizontal scroll */
   }
   
   /* Mode Switcher (Initial Selection Page) - Mobile */
@@ -899,6 +903,7 @@ body{
     flex-direction: column !important;
     height: calc(100vh - 120px) !important;
     overflow: visible !important;
+    touch-action: none; /* Allow canvas to handle all touch events */
   }
   
   /* Canvas adjustments */
@@ -910,6 +915,7 @@ body{
     overflow-y: scroll !important;
     -webkit-overflow-scrolling: touch !important;
     position: relative !important;
+    touch-action: pan-x pan-y !important; /* Enable scrolling in both directions */
   }
   
   /* Bot panel mobile fixes */
@@ -1182,16 +1188,13 @@ body{
   
   /* Ensure viewport is properly set */
   html, body {
-    overflow-x: hidden;
     width: 100%;
     position: relative;
-    touch-action: pan-y; /* Allow vertical scrolling and pull-to-refresh */
   }
   
-  /* Enable scrolling for main content */
-  #casualBotSection > *,
-  #aiBotSection > * {
-    touch-action: pan-y;
+  /* Enable scrolling for canvas only */
+  #flowCanvas {
+    touch-action: pan-x pan-y !important;
   }
 }
 
