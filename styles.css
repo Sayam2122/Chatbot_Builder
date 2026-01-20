@@ -905,8 +905,11 @@ body{
   #flowCanvas {
     height: 50% !important;
     min-height: 250px;
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow: scroll !important;
+    overflow-x: scroll !important;
+    overflow-y: scroll !important;
+    -webkit-overflow-scrolling: touch !important;
+    position: relative !important;
   }
   
   /* Bot panel mobile fixes */
@@ -1028,6 +1031,15 @@ body{
     position: relative !important;
     width: 100% !important;
     background: white !important;
+    overflow: scroll !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  /* Ensure nodes and SVG are large enough to scroll */
+  #nodesLayer,
+  #connectionsSvg {
+    min-width: 1500px !important;
+    min-height: 800px !important;
   }
   
   /* Node adjustments for mobile - IMPROVED VISIBILITY */
