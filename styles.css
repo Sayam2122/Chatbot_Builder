@@ -815,4 +815,233 @@ body{
 @media (max-width:768px){
   .modal-body-split{grid-template-columns:1fr}
   .modal-right{border-left:none;border-top:2px solid #e0e0e0;padding-left:0;padding-top:20px}
+  
+  /* Mobile UI Fixes */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Header adjustments for mobile */
+  .app-header {
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .app-header h1 {
+    font-size: 18px;
+  }
+  
+  .mode-toggle {
+    width: 100%;
+    order: 3;
+  }
+  
+  .header-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  
+  .header-btn {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+  
+  /* Bot sections mobile layout */
+  #casualBotSection,
+  #aiBotSection {
+    flex-direction: column !important;
+    height: calc(100vh - 120px) !important;
+  }
+  
+  /* Canvas adjustments */
+  #flowCanvas {
+    height: 50% !important;
+    min-height: 300px;
+  }
+  
+  /* Bot panel mobile fixes */
+  .bot-panel {
+    width: 100% !important;
+    min-width: unset !important;
+    flex: 1 !important;
+    height: 50% !important;
+    min-height: 300px;
+  }
+  
+  .panel-header {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .panel-header h2 {
+    font-size: 16px;
+    width: 100%;
+  }
+  
+  .panel-header > div {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  
+  .reset-btn {
+    font-size: 11px;
+    padding: 5px 10px;
+    flex: 1;
+    min-width: 100px;
+  }
+  
+  /* Chat area mobile */
+  .chat-area {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .chat-log {
+    flex: 1;
+    padding: 12px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .chat-log .bot-message,
+  .chat-log .user-message {
+    max-width: 90%;
+    font-size: 14px;
+  }
+  
+  /* Chat input mobile fix - CRITICAL */
+  .chat-input {
+    position: sticky;
+    bottom: 0;
+    padding: 12px;
+    background: #fafafa;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+  
+  .chat-input input {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    border-radius: 20px;
+    min-width: 0; /* Allows flex shrinking */
+  }
+  
+  .chat-input button {
+    padding: 10px 16px;
+    font-size: 14px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  
+  /* AI Books Sidebar mobile */
+  .ai-books-sidebar {
+    width: 100% !important;
+    max-height: 150px;
+    overflow-y: auto;
+    border-right: none;
+    border-bottom: 2px solid #e0e0e0;
+    flex-shrink: 0;
+  }
+  
+  /* Resize handle - hide on mobile */
+  .resize-handle {
+    display: none !important;
+  }
+  
+  /* Node adjustments for mobile */
+  .node {
+    font-size: 12px;
+    padding: 10px 16px;
+    min-width: 100px;
+  }
+  
+  /* Modal adjustments */
+  .modal-content {
+    width: 95%;
+    max-height: 90vh;
+    margin: 5vh auto;
+  }
+  
+  .modal-header h3 {
+    font-size: 18px;
+  }
+  
+  /* Menu panel mobile */
+  .menu-panel {
+    width: 90% !important;
+    max-width: none !important;
+  }
+  
+  /* Quick questions mobile */
+  .quick-questions {
+    padding: 8px 12px;
+  }
+  
+  .quick-question-btn {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+  
+  /* Training modal mobile */
+  .wizard-content {
+    padding: 16px;
+  }
+  
+  .wizard-step h3 {
+    font-size: 16px;
+  }
+  
+  /* Ensure viewport is properly set */
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+  }
 }
+
+/* Extra small devices (phones in portrait, less than 576px) */
+@media (max-width: 576px) {
+  .app-header h1 {
+    font-size: 16px;
+  }
+  
+  .header-btn {
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+  
+  .bot-panel {
+    min-height: 250px;
+  }
+  
+  .chat-input input {
+    font-size: 16px;
+    padding: 8px 10px;
+  }
+  
+  .chat-input button {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  .panel-header h2 {
+    font-size: 14px;
+  }
+  
+  .reset-btn {
+    font-size: 10px;
+    padding: 4px 8px;
+    min-width: 80px;
+  }
+}
+
